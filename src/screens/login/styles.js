@@ -1,0 +1,116 @@
+import styled from "styled-components/native";
+
+export const Container = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  background-color: #f5f5f5;
+  width: 100%;
+`;
+
+export const LoginCard = styled.View`
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+export const Title = styled.Text`
+  font-size: 24px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+  text-align: center;
+`;
+
+export const Subtitle = styled.Text`
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
+`;
+
+export const Form = styled.View`
+  flex-direction: column;
+  gap: 16px;
+`;
+
+export const InputWrapper = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  gap: 12px;
+`;
+
+export const Input = styled.TextInput`
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+
+  &::placeholder {
+    color: #666;
+  }
+`;
+
+export const Button = styled.TouchableOpacity`
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: white;
+  border-radius: 8px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+`;
+
+export const SocialButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+  color: #333;
+  font-size: 14px;
+  margin-top: 8px;
+`;
+
+export const Divider = styled.Text`
+  text-align: center;
+  position: relative;
+  color: #666;
+  font-size: 14px;
+  margin: 8px 0;
+`;
+
+export const ToggleText = styled.Text`
+  text-align: center;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 8px;
+`;
+
+export const ForgotPassword = styled.Text`
+  text-align: right;
+  color: ${({ theme }) => theme.colors.primary};
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: -8px;
+`;
+
+export const ErrorMessage = styled.Text`
+  color: #dc3545;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 8px;
+`;
