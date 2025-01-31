@@ -17,6 +17,12 @@ import ServicesByCategory from "../screens/services";
 import CriarComunidade from "../screens/comunidades/criar";
 import CriarServico from "../screens/services/criar";
 
+// Importar as novas telas de pagamento
+import HistoricoPagamento from "../screens/pagamentos/historicoPagamento";
+import Saques from "../screens/pagamentos/saques";
+import SetupMetodoPagamento from "../screens/pagamentos/setupMetodoPagamento";
+import TestePagamento from "../screens/pagamentos/testePagamento";
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -33,6 +39,18 @@ const MainStack = () => {
       />
       <Stack.Screen name="CriarComunidade" component={CriarComunidade} />
       <Stack.Screen name="CriarServico" component={CriarServico} />
+
+      <Stack.Screen name="HistoricoPagamento" component={HistoricoPagamento} />
+      <Stack.Screen name="Saques" component={Saques} />
+      <Stack.Screen
+        name="ConfigurarPagamento"
+        component={SetupMetodoPagamento}
+      />
+      <Stack.Screen
+        name="TestePagamento"
+        component={TestePagamento}
+        options={{ title: "Teste de Pagamento" }}
+      />
     </Stack.Navigator>
   );
 };

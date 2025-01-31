@@ -1,5 +1,6 @@
 import styled from "styled-components/native";
 import { ActivityIndicator } from "react-native";
+import { Platform } from "react-native";
 
 export const Container = styled.View`
   flex: 1;
@@ -196,4 +197,72 @@ export const LoadMoreButton = styled.TouchableOpacity`
 export const LoadMoreButtonText = styled.Text`
   color: ${(props) => props.theme.colors.primary};
   font-weight: 500;
+`;
+
+export const PaymentOptionsModal = styled.Modal``;
+
+export const ModalContainer = styled.View`
+  flex: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: flex-end;
+  width: 100%;
+  height: 100%;
+`;
+
+export const ModalContent = styled.View`
+  background-color: #fff;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 20px;
+  padding-bottom: ${Platform.OS === "ios" ? "40px" : "20px"};
+`;
+
+export const ModalTitle = styled.Text`
+  font-size: 20px;
+  font-weight: bold;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: 20px;
+  text-align: center;
+`;
+
+export const OptionButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background-color: ${({ theme }) => theme.colors.background};
+  border: 1px solid ${({ theme }) => `${theme.colors.primary}20`};
+`;
+
+export const OptionIcon = styled.View`
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+`;
+
+export const OptionText = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  flex: 1;
+`;
+
+export const CloseButton = styled.TouchableOpacity`
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  z-index: 1;
+`;
+
+export const CloseIcon = styled.View`
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: ${({ theme }) => `${theme.colors.primary}10`};
+  align-items: center;
+  justify-content: center;
 `;

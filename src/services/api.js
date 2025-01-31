@@ -3,6 +3,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
 // Criação da instância do Axios
+// Adicione no início do seu App.js ou index.js
+
 const api = axios.create({
   baseURL: process.env.EXPO_API_URL, // Ajuste conforme sua configuração de ambiente
 });

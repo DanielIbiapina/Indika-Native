@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, ActivityIndicator, Alert } from "react-native";
+import {
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {
   Ionicons,
@@ -38,6 +43,15 @@ import {
   LoadMoreButton,
   LoadMoreButtonText,
   LoaderContainer,
+  PaymentOptionsModal,
+  ModalContainer,
+  ModalTitle,
+  OptionButton,
+  OptionIcon,
+  OptionText,
+  CloseButton,
+  CloseIcon,
+  ModalContent,
 } from "./styles";
 import EditProfileModal from "../../components/editProfileModal";
 import ServiceManageCard from "../../components/serviceManageCard";
@@ -65,6 +79,7 @@ const Profile = () => {
   const [servicesPage, setServicesPage] = useState(1);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [hasMoreServices, setHasMoreServices] = useState(true);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
   useEffect(() => {
     loadProfileData();
@@ -171,6 +186,85 @@ const Profile = () => {
       Alert.alert("Erro", "Não foi possível atualizar o status do pedido");
     }
   };
+
+  const handlePaymentOptions = () => {
+    setShowPaymentOptions(true);
+  };
+
+  const PaymentOptionsContent = () => (
+    <PaymentOptionsModal
+      visible={showPaymentOptions}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowPaymentOptions(false)}
+    >
+      <TouchableWithoutFeedback onPress={() => setShowPaymentOptions(false)}>
+        <ModalContainer>
+          <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+            <ModalContent>
+              <CloseButton onPress={() => setShowPaymentOptions(false)}>
+                <CloseIcon>
+                  <Ionicons name="close" size={24} color="#666" />
+                </CloseIcon>
+              </CloseButton>
+
+              <ModalTitle>Opções de Pagamento</ModalTitle>
+
+              <OptionButton
+                onPress={() => {
+                  setShowPaymentOptions(false);
+                  navigation.navigate("HistoricoPagamento");
+                }}
+              >
+                <OptionIcon>
+                  <Ionicons name="time-outline" size={24} color="#422680" />
+                </OptionIcon>
+                <OptionText>Histórico de Pagamentos</OptionText>
+              </OptionButton>
+
+              <OptionButton
+                onPress={() => {
+                  setShowPaymentOptions(false);
+                  navigation.navigate("Saques");
+                }}
+              >
+                <OptionIcon>
+                  <Ionicons name="cash-outline" size={24} color="#422680" />
+                </OptionIcon>
+                <OptionText>Realizar Saque</OptionText>
+              </OptionButton>
+
+              <OptionButton
+                onPress={() => {
+                  setShowPaymentOptions(false);
+                  navigation.navigate("ConfigurarPagamento");
+                }}
+              >
+                <OptionIcon>
+                  <Ionicons name="card-outline" size={24} color="#422680" />
+                </OptionIcon>
+                <OptionText>Configurar Recebimentos</OptionText>
+              </OptionButton>
+
+              {__DEV__ && (
+                <OptionButton
+                  onPress={() => {
+                    setShowPaymentOptions(false);
+                    navigation.navigate("TestePagamento");
+                  }}
+                >
+                  <OptionIcon>
+                    <Ionicons name="bug-outline" size={24} color="#422680" />
+                  </OptionIcon>
+                  <OptionText>Teste de Pagamento</OptionText>
+                </OptionButton>
+              )}
+            </ModalContent>
+          </TouchableWithoutFeedback>
+        </ModalContainer>
+      </TouchableWithoutFeedback>
+    </PaymentOptionsModal>
+  );
 
   if (loading) {
     return (
@@ -313,17 +407,14 @@ const Profile = () => {
             <MenuItemText>Favoritos</MenuItemText>
           </MenuItem>
 
+          <MenuItem onPress={handlePaymentOptions}>
+            <Ionicons name="wallet-outline" size={24} color="#666" />
+            <MenuItemText>Pagamentos</MenuItemText>
+          </MenuItem>
+
           <Divider />
 
-          <MenuItem
-            onPress={() => {
-              try {
-                logout();
-              } catch (error) {
-                console.error("Erro ao fazer logout:", error);
-              }
-            }}
-          >
+          <MenuItem onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={24} color="#dc3545" />
             <MenuItemText style={{ color: "#dc3545" }}>Sair</MenuItemText>
           </MenuItem>
@@ -337,6 +428,8 @@ const Profile = () => {
           />
         )}
       </ScrollView>
+
+      <PaymentOptionsContent />
     </Container>
   );
 };
