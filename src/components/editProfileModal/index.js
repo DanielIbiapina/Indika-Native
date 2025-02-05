@@ -11,6 +11,7 @@ import {
   Input,
   Button,
   ErrorMessage,
+  ButtonText,
 } from "./styles";
 
 const EditProfileModal = ({ profile, onUpdate, onClose }) => {
@@ -37,26 +38,42 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-
     try {
-      let updatedProfile = profile;
+      setLoading(true);
+      setError("");
 
-      if (formData.avatar?.file) {
+      let updatedProfile = { ...profile };
+
+      // Primeiro, atualiza o avatar se houver uma nova imagem
+      if (formData.avatar?.uri) {
         const avatarFormData = new FormData();
-        avatarFormData.append("avatar", formData.avatar.file);
-
-        updatedProfile = await userService.updateAvatar(avatarFormData);
-      }
-
-      if (formData.name !== profile.name || formData.email !== profile.email) {
-        updatedProfile = await userService.updateProfile({
-          name: formData.name,
-          email: formData.email,
+        avatarFormData.append("avatar", {
+          uri: formData.avatar.uri,
+          type: formData.avatar.type || "image/jpeg", // Garante que sempre tenha um tipo
+          name: formData.avatar.fileName || "avatar.jpg", // Garante que sempre tenha um nome
         });
+
+        const avatarResponse = await userService.updateAvatar(avatarFormData);
+        if (avatarResponse?.avatar) {
+          updatedProfile.avatar = avatarResponse.avatar;
+        }
       }
 
+      // Depois, atualiza os outros dados do perfil se foram modificados
+      if (formData.name !== profile.name) {
+        const profileResponse = await userService.updateProfile({
+          name: formData.name,
+          isServiceProvider: profile.isServiceProvider,
+        });
+        if (profileResponse) {
+          updatedProfile = {
+            ...updatedProfile,
+            ...profileResponse,
+          };
+        }
+      }
+
+      // Atualiza o perfil no contexto/estado pai
       onUpdate(updatedProfile);
       onClose();
     } catch (err) {
@@ -81,6 +98,7 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
               onChange={handleAvatarChange}
               maxSize={2}
               label="Foto de perfil"
+              currentImage={profile.avatar} // Passa a imagem atual como referência
             />
 
             <Input
@@ -94,16 +112,15 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
               value={formData.email}
               onChangeText={(value) => handleChange("email", value)}
               keyboardType="email-address"
+              editable={false} // Email não pode ser editado
             />
 
             {error && <ErrorMessage>{error}</ErrorMessage>}
 
             <Button onPress={handleSubmit} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                "Salvar alterações"
-              )}
+              <ButtonText>
+                {loading ? "Salvando..." : "Salvar alterações"}
+              </ButtonText>
             </Button>
           </Form>
         </ModalContent>

@@ -113,12 +113,14 @@ const Comunidades = () => {
     );
   }
 
-  if (isLoggedIn && communities.userCommunities.length === 0) {
-    return (
-      <Container>
-        <Text>Você ainda não participa de nenhuma comunidade</Text>
-      </Container>
-    );
+  if (communities.userCommunities !== undefined) {
+    if (isLoggedIn && communities.userCommunities.length === 0) {
+      return (
+        <Container>
+          <Text>Você ainda não participa de nenhuma comunidade</Text>
+        </Container>
+      );
+    }
   }
 
   if (error) {

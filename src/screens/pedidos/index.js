@@ -31,6 +31,7 @@ const STATUS_LABELS = {
   accepted: "Aceito",
   in_progress: "Em andamento",
   completed: "Concluído",
+  paid: "Pago",
   cancelled: "Cancelado",
 };
 
@@ -67,7 +68,7 @@ const Pedidos = () => {
         ["pending", "accepted", "in_progress"].includes(order.status)
       );
       const completedOrders = data.filter((order) =>
-        ["completed", "cancelled"].includes(order.status)
+        ["completed", "cancelled", "paid"].includes(order.status)
       );
 
       setOrders({

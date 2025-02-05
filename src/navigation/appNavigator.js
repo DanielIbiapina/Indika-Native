@@ -23,6 +23,20 @@ import Saques from "../screens/pagamentos/saques";
 import SetupMetodoPagamento from "../screens/pagamentos/setupMetodoPagamento";
 import TestePagamento from "../screens/pagamentos/testePagamento";
 
+// Importar a nova tela
+import ProcessarPagamento from "../screens/pagamentos/processarPagamento";
+import AdminPayments from "../screens/admin/adminPayments";
+import Configuracoes from "../screens/configuracoes";
+import DadosPessoais from "../screens/configuracoes/dadosPessoais";
+import Seguranca from "../screens/configuracoes/seguranca";
+import Notificacoes from "../screens/configuracoes/notificacoes";
+import Idioma from "../screens/configuracoes/idioma";
+import VisibilidadePerfil from "../screens/configuracoes/visibilidadePerfil";
+import Localizacao from "../screens/configuracoes/localizacao";
+import CentralAjuda from "../screens/configuracoes/centralDeAjuda";
+import TermosUso from "../screens/configuracoes/termosDeUso";
+import PoliticaPrivacidade from "../screens/configuracoes/politicaDePrivacidade";
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
@@ -40,6 +54,27 @@ const MainStack = () => {
       <Stack.Screen name="CriarComunidade" component={CriarComunidade} />
       <Stack.Screen name="CriarServico" component={CriarServico} />
 
+      <Stack.Screen
+        name="ProcessarPagamento"
+        component={ProcessarPagamento}
+        /*options={{
+          headerShown: true,
+          title: "Pagamento",
+        }}*/
+      />
+
+      <Stack.Screen
+        name="Configuracoes"
+        component={Configuracoes}
+        options={{
+          headerShown: true,
+          title: "Configurações",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
       <Stack.Screen name="HistoricoPagamento" component={HistoricoPagamento} />
       <Stack.Screen name="Saques" component={Saques} />
       <Stack.Screen
@@ -50,6 +85,59 @@ const MainStack = () => {
         name="TestePagamento"
         component={TestePagamento}
         options={{ title: "Teste de Pagamento" }}
+      />
+      <Stack.Screen
+        name="AdminPayments"
+        component={AdminPayments}
+        options={{
+          title: "Gerenciar Pagamentos",
+          headerShown: true,
+        }}
+      />
+      <Stack.Screen
+        name="DadosPessoais"
+        component={DadosPessoais}
+        options={{ title: "Dados Pessoais" }}
+      />
+      <Stack.Screen
+        name="Seguranca"
+        component={Seguranca}
+        options={{ title: "Segurança" }}
+      />
+      <Stack.Screen
+        name="Notificacoes"
+        component={Notificacoes}
+        options={{ title: "Notificações" }}
+      />
+      <Stack.Screen
+        name="Idioma"
+        component={Idioma}
+        options={{ title: "Idioma" }}
+      />
+      <Stack.Screen
+        name="VisibilidadePerfil"
+        component={VisibilidadePerfil}
+        options={{ title: "Visibilidade do Perfil" }}
+      />
+      <Stack.Screen
+        name="Localizacao"
+        component={Localizacao}
+        options={{ title: "Localização" }}
+      />
+      <Stack.Screen
+        name="CentralAjuda"
+        component={CentralAjuda}
+        options={{ title: "Central de Ajuda" }}
+      />
+      <Stack.Screen
+        name="TermosUso"
+        component={TermosUso}
+        options={{ title: "Termos de Uso" }}
+      />
+      <Stack.Screen
+        name="PoliticaPrivacidade"
+        component={PoliticaPrivacidade}
+        options={{ title: "Política de Privacidade" }}
       />
     </Stack.Navigator>
   );

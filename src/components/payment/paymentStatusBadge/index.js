@@ -8,7 +8,17 @@ const STATUS_CONFIG = {
     icon: "checkmark-circle",
     color: "success",
   },
+  COMPLETED: {
+    label: "Concluído",
+    icon: "checkmark-circle",
+    color: "success",
+  },
   pending: {
+    label: "Pendente",
+    icon: "time",
+    color: "warning",
+  },
+  PENDING: {
     label: "Pendente",
     icon: "time",
     color: "warning",
@@ -32,6 +42,16 @@ const STATUS_CONFIG = {
     label: "Cancelado",
     icon: "close",
     color: "disabled",
+  },
+  AWAITING_CONFIRMATION: {
+    label: "Aguardando Confirmação",
+    icon: "hourglass",
+    color: "warning",
+  },
+  REJECTED: {
+    label: "Rejeitado",
+    icon: "close-circle",
+    color: "error",
   },
 };
 

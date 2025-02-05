@@ -39,6 +39,8 @@ export const StatusBadge = styled.View`
         return "#e8f5e9";
       case "completed":
         return "#e6f4ea";
+      case "paid":
+        return "#e6f4ea";
       case "cancelled":
         return "#ffebee";
       default:
@@ -54,6 +56,8 @@ export const StatusBadge = styled.View`
       case "in_progress":
         return "#1b5e20";
       case "completed":
+        return "#1e8e3e";
+      case "paid":
         return "#1e8e3e";
       case "cancelled":
         return "#c62828";
@@ -90,7 +94,7 @@ export const ActionButton = styled.TouchableOpacity`
         border: 1px solid #dc3545;
       `
       : `
-        background-color: #0066ff;
+        background-color: #422680;
       `}
 `;
 

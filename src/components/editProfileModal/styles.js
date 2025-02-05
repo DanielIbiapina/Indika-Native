@@ -35,11 +35,19 @@ export const Input = styled.TextInput`
 `;
 
 export const Button = styled.TouchableOpacity`
-  width: 100%;
-  padding: 14px;
   background-color: ${({ theme }) => theme.colors.primary};
   border-radius: 8px;
+  padding: 14px;
+  justify-content: center;
   align-items: center;
+  margin-top: 16px;
+  opacity: ${({ disabled }) => (disabled ? 0.7 : 1)};
+`;
+
+export const ButtonText = styled.Text`
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 export const ErrorMessage = styled.Text`

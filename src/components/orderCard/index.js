@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import { useAuth } from "../../contexts/authContext";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -14,6 +14,7 @@ import {
   RateButton,
 } from "./styles";
 import StarRating from "../starRating";
+import { paymentService } from "../../services/paymentService";
 
 const OrderCard = ({
   order,
@@ -25,9 +26,56 @@ const OrderCard = ({
   const { user } = useAuth();
   const navigation = useNavigation();
   const isProvider = user?.id === order.providerId;
+  const [paymentStatus, setPaymentStatus] = useState(null);
+
+  useEffect(() => {
+    const loadPaymentStatus = async () => {
+      try {
+        console.log(order.id);
+        if (order.status === "completed") {
+          const response = await paymentService.getPaymentStatus(order.id);
+
+          setPaymentStatus(response.paymentStatus);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar status do pagamento:", error);
+      }
+    };
+
+    loadPaymentStatus();
+  }, [order.id, order.status]);
 
   const handleRateOrder = () => {
     navigation.navigate("ServicoDetalhes", { id: order.service.id });
+  };
+
+  const handlePaymentRequest = async () => {
+    try {
+      await paymentService.createPaymentRequest({
+        orderId: order.id,
+        amount: order.price,
+        receiverId: order.providerId,
+        senderId: order.clientId,
+      });
+
+      Alert.alert("Sucesso", "Solicitação de pagamento enviada ao cliente");
+    } catch (error) {
+      console.error("Erro detalhado:", error);
+      Alert.alert(
+        "Erro",
+        error.response?.data?.message ||
+          "Erro ao solicitar pagamento. Por favor, tente novamente."
+      );
+    }
+  };
+
+  const handlePayment = () => {
+    navigation.navigate("ProcessarPagamento", {
+      orderId: order.id,
+      amount: order.price,
+      providerId: order.providerId,
+      serviceTitle: order.service.title,
+    });
   };
 
   return (
@@ -91,6 +139,28 @@ const OrderCard = ({
           </ActionButton>
         </ActionsContainer>
       )}
+
+      {/* Botão de solicitar pagamento (prestador) */}
+      {isProvider &&
+        order.status === "completed" &&
+        (!paymentStatus || paymentStatus === "CANCELLED") && (
+          <ActionsContainer>
+            <ActionButton onPress={handlePaymentRequest} variant="primary">
+              <Text style={{ color: "white" }}>Solicitar Pagamento</Text>
+            </ActionButton>
+          </ActionsContainer>
+        )}
+
+      {/* Botão de realizar pagamento (cliente) */}
+      {!isProvider &&
+        order.status === "completed" &&
+        paymentStatus === "PENDING" && (
+          <ActionsContainer>
+            <ActionButton onPress={handlePayment} variant="primary">
+              <Text style={{ color: "white" }}>Realizar Pagamento</Text>
+            </ActionButton>
+          </ActionsContainer>
+        )}
 
       {order.status === "completed" && isOrderPage ? (
         reviews.some(

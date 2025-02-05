@@ -17,7 +17,7 @@ export const userService = {
       const response = await api.put("/users/me", userData);
       return response.data;
     } catch (error) {
-      throw handleError(error, "Erro ao atualizar perfil do usuário");
+      throw error.response?.data || error;
     }
   },
 
@@ -31,7 +31,7 @@ export const userService = {
       });
       return response.data;
     } catch (error) {
-      throw handleError(error, "Erro ao atualizar avatar");
+      throw error.response?.data || error;
     }
   },
 

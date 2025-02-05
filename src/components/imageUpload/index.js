@@ -1,57 +1,63 @@
-import React, { useRef } from "react";
-import { View, Text, Image, Alert, TouchableOpacity } from "react-native";
+import React from "react";
+import { Alert, Image } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Container,
+  Label,
   ImagePreview,
   UploadButtons,
   UploadButton,
   RemoveButton,
-  Label,
+  Text,
 } from "./styles";
 
-const ImageUpload = ({
-  value,
-  onChange,
-  maxSize = 2,
-  label = "Selecione uma imagem",
-}) => {
-  const handleSelectImage = async (useCamera = false) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Erro",
-        "Desculpe, precisamos de permissões para acessar a galeria!"
-      );
-      return;
-    }
-
+const ImageUpload = ({ value, onChange, maxSize = 2, label, currentImage }) => {
+  const pickImage = async () => {
     try {
-      const pickerMethod = useCamera
-        ? ImagePicker.launchCameraAsync
-        : ImagePicker.launchImageLibraryAsync;
+      // Solicita permissão para acessar a galeria
+      const { status } =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      const result = await pickerMethod({
+      if (status !== "granted") {
+        Alert.alert(
+          "Permissão necessária",
+          "Precisamos de acesso à sua galeria para selecionar uma foto."
+        );
+        return;
+      }
+
+      // Abre o seletor de imagem
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 1,
+        aspect: [1, 1],
+        quality: 0.8,
       });
 
       if (!result.canceled) {
-        const file = result.assets[0];
-        if (file.fileSize > maxSize * 1024 * 1024) {
-          Alert.alert("Erro", `A imagem deve ter no máximo ${maxSize}MB`);
+        const selectedImage = result.assets[0];
+
+        // Verifica o tamanho do arquivo (em MB)
+        const fileSize = selectedImage.fileSize / (1024 * 1024);
+        if (fileSize > maxSize) {
+          Alert.alert(
+            "Arquivo muito grande",
+            `Por favor, selecione uma imagem menor que ${maxSize}MB`
+          );
           return;
         }
 
+        // Prepara o objeto de imagem para upload
         onChange({
-          preview: file.uri,
-          file,
+          uri: selectedImage.uri,
+          type: "image/jpeg",
+          fileName: `avatar_${Date.now()}.jpg`,
         });
       }
-    } catch (err) {
-      console.error("Erro ao selecionar imagem", err);
+    } catch (error) {
+      console.error("Erro ao selecionar imagem:", error);
+      Alert.alert("Erro", "Não foi possível selecionar a imagem");
     }
   };
 
@@ -62,29 +68,26 @@ const ImageUpload = ({
   return (
     <Container>
       {label && <Label>{label}</Label>}
-      {value?.preview ? (
+
+      {(value?.uri || currentImage) && (
         <ImagePreview>
           <Image
-            source={{ uri: value.preview }}
+            source={{ uri: value?.uri || currentImage }}
             style={{ width: "100%", height: 200 }}
+            resizeMode="cover"
           />
           <RemoveButton onPress={handleRemove}>
-            <Text>Remover</Text>
+            <Text style={{ color: "white" }}>Remover</Text>
           </RemoveButton>
         </ImagePreview>
-      ) : (
-        <UploadButtons>
-          <UploadButton onPress={() => handleSelectImage(true)}>
-            <Ionicons name="camera" size={24} color={theme.colors.primary} />
-            <Text>Tirar foto</Text>
-          </UploadButton>
-
-          <UploadButton onPress={() => handleSelectImage(false)}>
-            <Ionicons name="image" size={24} color={theme.colors.primary} />
-            <Text>Galeria</Text>
-          </UploadButton>
-        </UploadButtons>
       )}
+
+      <UploadButtons>
+        <UploadButton onPress={pickImage}>
+          <Ionicons name="camera-outline" size={24} color="#422680" />
+          <Text>{value?.uri ? "Trocar foto" : "Adicionar foto"}</Text>
+        </UploadButton>
+      </UploadButtons>
     </Container>
   );
 };

@@ -1,12 +1,22 @@
 import styled from "styled-components/native";
 
-export const Container = styled.View`
+export const ScrollContainer = styled.ScrollView.attrs({
+  showsVerticalScrollIndicator: false,
+  contentContainerStyle: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 16,
+    paddingBottom: 32,
+  },
+  keyboardShouldPersistTaps: "handled",
+})`
   flex: 1;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
   background-color: #f5f5f5;
+`;
+
+export const Container = styled.View`
   width: 100%;
+  align-items: center;
 `;
 
 export const LoginCard = styled.View`
@@ -59,14 +69,18 @@ export const Input = styled.TextInput`
 
 export const Button = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.primary};
-  color: white;
   border-radius: 8px;
   padding: 14px;
-  font-size: 16px;
-  font-weight: 500;
   justify-content: center;
   align-items: center;
   margin-top: 16px;
+  elevation: 2;
+`;
+
+export const ButtonText = styled.Text`
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
 `;
 
 export const SocialButton = styled.TouchableOpacity`

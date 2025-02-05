@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator } from "react-native";
+import { ActivityIndicator, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "../../../contexts/authContext";
 import { paymentService } from "../../../services/paymentService";
 import {
   Container,
@@ -15,12 +16,13 @@ import {
   ServiceName,
   Amount,
   TransactionInfo,
+  UserInfo,
+  UserName,
   DateText,
-  StatusBadge,
-  StatusText,
   EmptyState,
   EmptyStateText,
   LoaderContainer,
+  ListContainer,
 } from "./styles";
 import PaymentStatusBadge from "../../../components/payment/paymentStatusBadge";
 
@@ -31,20 +33,31 @@ const STATUS_MAP = {
 };
 
 const HistoricoPagamento = () => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState("all"); // all, received, sent
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    loadTransactions();
-  }, [filter]);
 
   const loadTransactions = async () => {
     try {
       setLoading(true);
       const response = await paymentService.getPaymentHistory();
-      setTransactions(response.data);
+      console.log(response.data);
+      // Filtrar transações baseado no tipo selecionado
+      let filteredTransactions = response.data;
+      if (filter === "received") {
+        filteredTransactions = response.data.filter(
+          (transaction) => transaction.receiverId === user.id
+        );
+      } else if (filter === "sent") {
+        filteredTransactions = response.data.filter(
+          (transaction) => transaction.senderId === user.id
+        );
+      }
+
+      setTransactions(filteredTransactions);
     } catch (error) {
       setError("Erro ao carregar histórico de pagamentos");
       console.error(error);
@@ -52,6 +65,16 @@ const HistoricoPagamento = () => {
       setLoading(false);
     }
   };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadTransactions();
+    setRefreshing(false);
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, [filter]);
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("pt-BR");
@@ -64,13 +87,56 @@ const HistoricoPagamento = () => {
     }).format(amount);
   };
 
-  if (loading) {
+  const renderTransaction = ({ item }) => (
+    <TransactionCard>
+      <TransactionHeader>
+        <ServiceName>Serviço</ServiceName>
+        <Amount income={item.receiverId === user.id}>
+          {formatAmount(item.amount)}
+        </Amount>
+      </TransactionHeader>
+      <TransactionInfo>
+        <UserInfo>
+          <UserName>
+            {item.receiverId === user.id
+              ? `De: ${item.sender.name}`
+              : `Para: ${item.receiver.name}`}
+          </UserName>
+          <DateText>{formatDate(item.createdAt)}</DateText>
+        </UserInfo>
+        <PaymentStatusBadge status={item.status} />
+      </TransactionInfo>
+    </TransactionCard>
+  );
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <LoaderContainer>
+          <ActivityIndicator size="large" color="#422680" />
+        </LoaderContainer>
+      );
+    }
+
     return (
-      <LoaderContainer>
-        <ActivityIndicator size="large" color="#422680" />
-      </LoaderContainer>
+      <TransactionList
+        data={transactions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderTransaction}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <EmptyState>
+            <Ionicons name="receipt-outline" size={48} color="#666" />
+            <EmptyStateText>
+              Nenhuma transação encontrada para o filtro selecionado
+            </EmptyStateText>
+          </EmptyState>
+        }
+      />
     );
-  }
+  };
 
   return (
     <Container>
@@ -99,32 +165,7 @@ const HistoricoPagamento = () => {
         </FilterButton>
       </FilterContainer>
 
-      <TransactionList
-        data={transactions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <TransactionCard>
-            <TransactionHeader>
-              <ServiceName>{item.serviceName}</ServiceName>
-              <Amount income={item.type === "received"}>
-                {formatAmount(item.amount)}
-              </Amount>
-            </TransactionHeader>
-            <TransactionInfo>
-              <DateText>{formatDate(item.date)}</DateText>
-              <PaymentStatusBadge status={item.status} />
-            </TransactionInfo>
-          </TransactionCard>
-        )}
-        ListEmptyComponent={
-          <EmptyState>
-            <Ionicons name="receipt-outline" size={48} color="#666" />
-            <EmptyStateText>
-              Nenhuma transação encontrada para o filtro selecionado
-            </EmptyStateText>
-          </EmptyState>
-        }
-      />
+      <ListContainer>{renderContent()}</ListContainer>
     </Container>
   );
 };

@@ -1,4 +1,5 @@
 import styled from "styled-components/native";
+import { Animated } from "react-native";
 
 export const FormContainer = styled.View`
   background-color: #fff;
@@ -16,7 +17,9 @@ export const RatingContainer = styled.View`
   gap: 8px;
 `;
 
-export const StarButton = styled.TouchableOpacity`
+export const StarButton = styled.TouchableOpacity``;
+
+export const StarText = styled.Text`
   font-size: 24px;
   opacity: ${({ selected }) => (selected ? 1 : 0.3)};
   transform: scale(${({ selected }) => (selected ? 1.1 : 1)});
@@ -53,15 +56,43 @@ export const ErrorMessage = styled.Text`
 export const RecommendationButtons = styled.View`
   flex-direction: row;
   justify-content: space-between;
+  gap: 12px;
   margin-top: 16px;
+  margin-bottom: 8px;
 `;
 
 export const RecommendationButton = styled.TouchableOpacity`
-  flex: 1;
-  margin: 0 5px;
-  padding: 10px;
-  background-color: #ddd;
+  flex: 0.48;
+  padding: 15px;
+  background-color: ${({ selected, theme }) =>
+    selected ? `${theme.colors.primary}15` : "#f5f5f5"};
   border-radius: 8px;
   align-items: center;
   justify-content: center;
+  border: 2px solid
+    ${({ selected, theme }) =>
+      selected ? theme.colors.primary : "transparent"};
+  flex-direction: row;
+  gap: 8px;
+`;
+
+export const RecommendationButtonText = styled.Text`
+  color: ${({ selected, theme }) =>
+    selected ? theme.colors.primary : theme.colors.text.primary};
+  font-size: 16px;
+  font-weight: ${({ selected }) => (selected ? "600" : "400")};
+`;
+
+export const ButtonText = styled.Text`
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+export const AnimatedContainer = styled(Animated.View)`
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 `;

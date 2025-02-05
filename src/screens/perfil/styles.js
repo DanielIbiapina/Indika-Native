@@ -16,10 +16,14 @@ export const ProfileHeader = styled.View`
   padding-top: 32px;
 `;
 
-export const Avatar = styled.Image`
+export const AvatarContainer = styled.View`
   width: 100px;
   height: 100px;
   border-radius: 50px;
+  overflow: hidden;
+  background-color: #f5f5f5;
+  justify-content: center;
+  align-items: center;
 `;
 
 export const UserInfo = styled.View`
@@ -143,10 +147,10 @@ export const ContentSection = styled.View`
 `;
 
 export const LoadingSpinner = styled(ActivityIndicator).attrs({
-  size: "large",
+  size: "small",
   color: ({ theme }) => theme.colors.primary,
 })`
-  margin: 20px 0;
+  margin: 16px 0;
 `;
 
 export const LoaderContainer = styled.View`
@@ -192,6 +196,7 @@ export const LoadMoreButton = styled.TouchableOpacity`
   border-radius: 8px;
   align-items: center;
   margin-top: 16px;
+  margin-bottom: 16px;
 `;
 
 export const LoadMoreButtonText = styled.Text`

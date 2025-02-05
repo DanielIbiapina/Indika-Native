@@ -39,9 +39,16 @@ import {
   ButtonText,
   TextInput,
   LoaderContainer,
+  InputContainer,
+  InputLabel,
+  DateTimeButton,
+  DateTimeText,
 } from "./styles";
 import { communityService } from "../../services/communityService";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, ActivityIndicator, Alert } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const ServicoDetalhes = () => {
   const { id } = useRoute().params;
@@ -52,9 +59,11 @@ const ServicoDetalhes = () => {
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null);
   const [showBookingForm, setShowBookingForm] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [bookingData, setBookingData] = useState({
-    date: "",
-    time: "",
+    date: new Date(),
+    time: new Date(),
     description: "",
   });
   const [recommendationStatus, setRecommendationStatus] = useState(null);
@@ -106,7 +115,9 @@ const ServicoDetalhes = () => {
       setError(null);
 
       const scheduledDate = new Date(
-        `${bookingData.date}T${bookingData.time}`
+        `${bookingData.date.toISOString().split("T")[0]}T${
+          bookingData.time.toISOString().split("T")[1]
+        }`
       ).toISOString();
 
       const orderData = {
@@ -116,7 +127,9 @@ const ServicoDetalhes = () => {
       };
 
       await orderService.create(orderData);
-      navigation.navigate("Pedidos"); // ou para onde quiser redirecionar após sucesso
+      navigation.navigate("TabNavigator", {
+        screen: "Pedidos",
+      });
     } catch (err) {
       setError(err.response?.data?.message || "Erro ao agendar serviço");
     } finally {
@@ -135,7 +148,7 @@ const ServicoDetalhes = () => {
       const updatedReviews = await reviewService.listByService(id);
       setReviews(updatedReviews);
 
-      if (recommendationStatus === "Você recomendou esta pessoa.") {
+      if (recommendationStatus === "indica") {
         await recommendService.recommend(service.providerId, communityIds);
         setRecommendationStatus(
           "Você recomendou este serviço para suas comunidades!"
@@ -144,6 +157,34 @@ const ServicoDetalhes = () => {
     } catch (error) {
       alert("Erro ao enviar avaliação. Tente novamente.");
     }
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setBookingData((prev) => ({
+        ...prev,
+        date: selectedDate,
+      }));
+    }
+  };
+
+  const onTimeChange = (event, selectedTime) => {
+    setShowTimePicker(false);
+    if (selectedTime) {
+      setBookingData((prev) => ({
+        ...prev,
+        time: selectedTime,
+      }));
+    }
+  };
+
+  const formatDate = (date) => {
+    return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  };
+
+  const formatTime = (time) => {
+    return format(time, "HH:mm", { locale: ptBR });
   };
 
   if (loading)
@@ -186,6 +227,75 @@ const ServicoDetalhes = () => {
           </ServiceDetails>
         </ServiceInfo>
 
+        {showBookingForm && (
+          <BookingForm>
+            <InputContainer>
+              <InputLabel>Data</InputLabel>
+              <DateTimeButton onPress={() => setShowDatePicker(true)}>
+                <DateTimeText>
+                  {bookingData.date
+                    ? formatDate(bookingData.date)
+                    : "Selecionar data"}
+                </DateTimeText>
+                <Ionicons name="calendar-outline" size={20} color="#666" />
+              </DateTimeButton>
+            </InputContainer>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={bookingData.date}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                minimumDate={new Date()}
+                locale="pt-BR"
+              />
+            )}
+
+            <InputContainer>
+              <InputLabel>Horário</InputLabel>
+              <DateTimeButton onPress={() => setShowTimePicker(true)}>
+                <DateTimeText>
+                  {bookingData.time
+                    ? formatTime(bookingData.time)
+                    : "Selecionar horário"}
+                </DateTimeText>
+                <Ionicons name="time-outline" size={20} color="#666" />
+              </DateTimeButton>
+            </InputContainer>
+
+            {showTimePicker && (
+              <DateTimePicker
+                value={bookingData.time}
+                mode="time"
+                display="default"
+                onChange={onTimeChange}
+                locale="pt-BR"
+              />
+            )}
+
+            <TextInput
+              placeholder="Descrição"
+              placeholderTextColor="#280659"
+              value={bookingData.description}
+              onChangeText={(description) =>
+                setBookingData({ ...bookingData, description })
+              }
+              multiline
+            />
+
+            <Button onPress={handleBookingSubmit}>
+              <ButtonText>
+                {loading ? "Carregando..." : "Confirmar Agendamento"}
+              </ButtonText>
+            </Button>
+
+            <Button secondary onPress={() => setShowBookingForm(false)}>
+              <ButtonText secondary>Cancelar</ButtonText>
+            </Button>
+          </BookingForm>
+        )}
+
         <RecommendationsSection>
           {signed ? (
             recommendations.length > 0 ? (
@@ -224,42 +334,6 @@ const ServicoDetalhes = () => {
             </EmptyText>
           )}
         </RecommendationsSection>
-
-        {showBookingForm && (
-          <BookingForm>
-            <TextInput
-              placeholder="Data"
-              placeholderTextColor={theme.colors.text.secondary}
-              value={bookingData.date}
-              onChangeText={(date) => setBookingData({ ...bookingData, date })}
-              keyboardType="numeric"
-            />
-            <TextInput
-              placeholder="Hora"
-              placeholderTextColor={theme.colors.text.secondary}
-              value={bookingData.time}
-              onChangeText={(time) => setBookingData({ ...bookingData, time })}
-              keyboardType="numeric"
-            />
-            <TextInput
-              placeholder="Descrição"
-              placeholderTextColor={theme.colors.text.secondary}
-              value={bookingData.description}
-              onChangeText={(description) =>
-                setBookingData({ ...bookingData, description })
-              }
-              multiline
-            />
-            <Button onPress={handleBookingSubmit}>
-              <ButtonText>
-                {loading ? "Carregando..." : "Confirmar Agendamento"}
-              </ButtonText>
-            </Button>
-            <Button secondary onPress={() => setShowBookingForm(false)}>
-              <ButtonText secondary>Cancelar</ButtonText>
-            </Button>
-          </BookingForm>
-        )}
 
         <ReviewsSection>
           <SectionTitle>

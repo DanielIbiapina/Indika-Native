@@ -166,6 +166,32 @@ export const BookingForm = styled.View`
   elevation: 2;
 `;
 
+export const InputContainer = styled.View`
+  margin-bottom: 16px;
+`;
+
+export const InputLabel = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 8px;
+`;
+
+export const DateTimeButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: ${({ theme }) => theme.colors.background};
+  border-radius: 8px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+`;
+
+export const DateTimeText = styled.Text`
+  font-size: 16px;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
 export const TextInput = styled.TextInput`
   height: 48px;
   border-width: 1px;

@@ -7,6 +7,7 @@ export const Container = styled.View`
 
 export const Header = styled.View`
   padding: 16px;
+  padding-top: 40px;
   background-color: #fff;
   border-bottom-width: 1px;
   border-bottom-color: ${({ theme }) => theme.colors.border};
@@ -27,6 +28,7 @@ export const FilterContainer = styled.View`
 `;
 
 export const FilterButton = styled.TouchableOpacity`
+  margin-top: 10px;
   padding: 8px 16px;
   border-radius: 20px;
   background-color: ${({ active, theme }) =>
@@ -137,4 +139,20 @@ export const LoaderContainer = styled.View`
   flex: 1;
   justify-content: center;
   align-items: center;
+  padding: 20px;
+`;
+
+export const UserInfo = styled.View`
+  flex: 1;
+`;
+
+export const UserName = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 4px;
+`;
+
+export const ListContainer = styled.View`
+  flex: 1;
+  background-color: #f5f5f5;
 `;

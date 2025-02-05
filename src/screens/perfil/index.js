@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   TouchableWithoutFeedback,
+  Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -17,7 +18,7 @@ import OrderCard from "../../components/orderCard";
 import {
   Container,
   ProfileHeader,
-  Avatar,
+  AvatarContainer,
   UserInfo,
   UserName,
   UserEmail,
@@ -80,6 +81,9 @@ const Profile = () => {
   const [servicesLoading, setServicesLoading] = useState(false);
   const [hasMoreServices, setHasMoreServices] = useState(true);
   const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [receivedOrdersPage, setReceivedOrdersPage] = useState(1);
+  const [receivedOrdersLoading, setReceivedOrdersLoading] = useState(false);
+  const [hasMoreOrders, setHasMoreOrders] = useState(true);
 
   useEffect(() => {
     loadProfileData();
@@ -101,6 +105,7 @@ const Profile = () => {
     try {
       setLoading(true);
       const profile = await userService.getProfile();
+      console.log(profile);
       setProfileData(profile);
     } catch (err) {
       setError("Erro ao carregar dados do perfil");
@@ -123,12 +128,27 @@ const Profile = () => {
     }
   };
 
-  const loadReceivedOrders = async () => {
+  const loadReceivedOrders = async (page = 1) => {
     try {
-      const orders = await orderService.list({ role: "provider" });
-      setReceivedOrders(orders);
+      setReceivedOrdersLoading(true);
+      const orders = await orderService.list({
+        role: "provider",
+        page,
+        limit: 10,
+      });
+
+      if (page === 1) {
+        setReceivedOrders(orders);
+      } else {
+        setReceivedOrders([...receivedOrders, ...orders]);
+      }
+
+      setHasMoreOrders(orders.length === 10);
+      setReceivedOrdersPage(page);
     } catch (error) {
       console.error("Erro ao carregar pedidos recebidos:", error);
+    } finally {
+      setReceivedOrdersLoading(false);
     }
   };
 
@@ -176,6 +196,12 @@ const Profile = () => {
     }
   };
 
+  const loadMoreOrders = () => {
+    if (!receivedOrdersLoading && hasMoreOrders) {
+      loadReceivedOrders(receivedOrdersPage + 1);
+    }
+  };
+
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
       await orderService.updateStatus(orderId, newStatus);
@@ -189,6 +215,27 @@ const Profile = () => {
 
   const handlePaymentOptions = () => {
     setShowPaymentOptions(true);
+  };
+
+  const handleUpdateProfile = async (updatedProfile) => {
+    try {
+      setLoading(true);
+      setProfileData({
+        ...profileData,
+        ...updatedProfile,
+      });
+
+      await loadProfileData();
+
+      setIsEditing(false);
+
+      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar perfil:", error);
+      Alert.alert("Erro", "Não foi possível atualizar o perfil");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const PaymentOptionsContent = () => (
@@ -266,6 +313,22 @@ const Profile = () => {
     </PaymentOptionsModal>
   );
 
+  const renderAvatar = () => {
+    return (
+      <AvatarContainer>
+        <Image
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+          }}
+          source={profileData?.avatar ? { uri: profileData.avatar } : ""}
+          resizeMode="cover"
+        />
+      </AvatarContainer>
+    );
+  };
+
   if (loading) {
     return (
       <LoaderContainer>
@@ -286,10 +349,7 @@ const Profile = () => {
     <Container>
       <ScrollView showsVerticalScrollIndicator={false}>
         <ProfileHeader>
-          <Avatar
-            source={{ uri: profileData?.avatar }}
-            //defaultSource={require("../../assets/default-avatar.png")}
-          />
+          {renderAvatar()}
           <UserInfo>
             <UserName>{profileData?.name}</UserName>
             <UserEmail>{profileData?.email}</UserEmail>
@@ -351,6 +411,16 @@ const Profile = () => {
                   onStatusUpdate={handleStatusUpdate}
                 />
               ))}
+
+              {receivedOrdersLoading && <LoadingSpinner />}
+
+              {hasMoreOrders && !receivedOrdersLoading && (
+                <LoadMoreButton onPress={loadMoreOrders}>
+                  <LoadMoreButtonText>
+                    Carregar mais solicitações
+                  </LoadMoreButtonText>
+                </LoadMoreButton>
+              )}
             </>
           )}
 
@@ -411,6 +481,17 @@ const Profile = () => {
             <Ionicons name="wallet-outline" size={24} color="#666" />
             <MenuItemText>Pagamentos</MenuItemText>
           </MenuItem>
+
+          {user?.isAdmin && (
+            <MenuItem onPress={() => navigation.navigate("AdminPayments")}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={24}
+                color="#422680"
+              />
+              <MenuItemText>Gerenciar Pagamentos</MenuItemText>
+            </MenuItem>
+          )}
 
           <Divider />
 
