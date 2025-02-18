@@ -1,3 +1,4 @@
+import "react-native-gesture-handler";
 import React from "react";
 import { ThemeProvider } from "styled-components/native";
 import { AuthProvider } from "./contexts/authContext";
@@ -7,7 +8,7 @@ import AppNavigator from "./navigation/appNavigator"; // Importe o AppNavigator 
 import { StatusBar } from "expo-status-bar"; // Importar o StatusBar do Expo
 import { STRIPE_CONFIG } from "./config/stripe.config";
 
-console.log(theme);
+
 export default function App() {
   return (
     <StripeProvider

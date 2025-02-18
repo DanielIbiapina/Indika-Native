@@ -4,6 +4,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/authContext";
+import { linking } from "./linking";
 
 // Importar as telas
 import Home from "../screens/home";
@@ -36,6 +37,7 @@ import Localizacao from "../screens/configuracoes/localizacao";
 import CentralAjuda from "../screens/configuracoes/centralDeAjuda";
 import TermosUso from "../screens/configuracoes/termosDeUso";
 import PoliticaPrivacidade from "../screens/configuracoes/politicaDePrivacidade";
+import Mensagens from "../screens/mensagens";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -139,6 +141,18 @@ const MainStack = () => {
         component={PoliticaPrivacidade}
         options={{ title: "Política de Privacidade" }}
       />
+      <Stack.Screen
+        name="Mensagens"
+        component={Mensagens}
+        options={{
+          headerShown: true,
+          title: "Mensagens",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
     </Stack.Navigator>
   );
 };
@@ -192,7 +206,7 @@ const TabNavigator = () => {
 
 const AppNavigator = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer linking={linking}>
       <MainStack />
     </NavigationContainer>
   );

@@ -21,7 +21,7 @@ const OrderCard = ({
   statusLabels,
   onStatusUpdate,
   isOrderPage,
-  reviews,
+  reviews = [],
 }) => {
   const { user } = useAuth();
   const navigation = useNavigation();
@@ -29,9 +29,10 @@ const OrderCard = ({
   const [paymentStatus, setPaymentStatus] = useState(null);
 
   useEffect(() => {
+    console.log(isOrderPage);
+
     const loadPaymentStatus = async () => {
       try {
-        console.log(order.id);
         if (order.status === "completed") {
           const response = await paymentService.getPaymentStatus(order.id);
 
@@ -78,6 +79,10 @@ const OrderCard = ({
     });
   };
 
+  const userReview = Array.isArray(reviews)
+    ? reviews.find((r) => r.orderId === order.id && r.reviewerId === user?.id)
+    : null;
+
   return (
     <Card>
       <ServiceInfo>
@@ -96,11 +101,8 @@ const OrderCard = ({
           </StatusBadge>
         </ServiceDetails>
       </ServiceInfo>
-
       <Price>R$ {Number(order.price).toFixed(2)}</Price>
-
       {order.description && <Text>{order.description}</Text>}
-
       {isProvider && order.status === "pending" && (
         <ActionsContainer>
           <ActionButton
@@ -117,7 +119,6 @@ const OrderCard = ({
           </ActionButton>
         </ActionsContainer>
       )}
-
       {isProvider && order.status === "accepted" && (
         <ActionsContainer>
           <ActionButton
@@ -128,7 +129,6 @@ const OrderCard = ({
           </ActionButton>
         </ActionsContainer>
       )}
-
       {isProvider && order.status === "in_progress" && (
         <ActionsContainer>
           <ActionButton
@@ -139,9 +139,9 @@ const OrderCard = ({
           </ActionButton>
         </ActionsContainer>
       )}
-
       {/* Botão de solicitar pagamento (prestador) */}
-      {isProvider &&
+      {/*
+      isProvider &&
         order.status === "completed" &&
         (!paymentStatus || paymentStatus === "CANCELLED") && (
           <ActionsContainer>
@@ -149,39 +149,37 @@ const OrderCard = ({
               <Text style={{ color: "white" }}>Solicitar Pagamento</Text>
             </ActionButton>
           </ActionsContainer>
-        )}
-
+        )
+      */}
       {/* Botão de realizar pagamento (cliente) */}
+      {console.log(paymentStatus)}
       {!isProvider &&
         order.status === "completed" &&
-        paymentStatus === "PENDING" && (
+        (!paymentStatus || paymentStatus === "CANCELLED") && (
           <ActionsContainer>
             <ActionButton onPress={handlePayment} variant="primary">
               <Text style={{ color: "white" }}>Realizar Pagamento</Text>
             </ActionButton>
           </ActionsContainer>
         )}
-
-      {order.status === "completed" && isOrderPage ? (
-        reviews.some(
-          (r) => r.orderId === order.id && r.reviewerId === user?.id
-        ) ? (
-          <View>
-            <StarRating
-              rating={
-                reviews.find(
-                  (r) => r.orderId === order.id && r.reviewerId === user?.id
-                ).rating
-              }
-            />
-          </View>
-        ) : (
-          <RateButton onPress={handleRateOrder}>
-            <Text style={{ color: "white", marginRight: 8 }}>⭐</Text>
-            <Text style={{ color: "white" }}>Avaliar Pedido</Text>
-          </RateButton>
-        )
-      ) : null}
+      {console.log(
+        (order.status === "completed" || order.status === "PAID") && isOrderPage
+      )}
+      {(order.status === "completed" || order.status === "PAID") &&
+        isOrderPage && (
+          <>
+            {userReview ? (
+              <View>
+                <StarRating rating={userReview.rating} />
+              </View>
+            ) : (
+              <RateButton onPress={handleRateOrder}>
+                <Text style={{ color: "white", marginRight: 8 }}>⭐</Text>
+                <Text style={{ color: "white" }}>Avaliar Pedido</Text>
+              </RateButton>
+            )}
+          </>
+        )}
     </Card>
   );
 };

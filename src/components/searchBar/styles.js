@@ -32,7 +32,6 @@ export const SearchInput = styled.TextInput`
   flex: 1;
   font-size: 15px;
   color: ${({ theme }) => {
-    console.log(theme);
     return theme?.colors?.text?.primary || "#000";
   }};
   padding: 0;

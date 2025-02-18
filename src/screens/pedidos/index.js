@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
-import { ActivityIndicator, FlatList, View, Text } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { ActivityIndicator, FlatList, View, Text, Alert } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { orderService } from "../../services/orderService";
 import { reviewService } from "../../services/reviewService";
@@ -32,11 +32,13 @@ const STATUS_LABELS = {
   in_progress: "Em andamento",
   completed: "Concluído",
   paid: "Pago",
+  PAID: "Pago",
   cancelled: "Cancelado",
 };
 
 const Pedidos = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { signed: isLoggedIn, user } = useAuth();
   const [activeTab, setActiveTab] = useState("active");
   const [orders, setOrders] = useState([]);
@@ -48,8 +50,15 @@ const Pedidos = () => {
     const loadOrdersAndReviews = async () => {
       if (isLoggedIn) {
         await loadOrders();
-        const userReviews = await reviewService.listByUser(user.id);
-        setReviews(userReviews);
+        try {
+          const response = await reviewService.listByUser(user.id);
+          console.log("Reviews carregadas:", response);
+          // Extraindo o array de reviews do objeto de resposta
+          setReviews(response.reviews || []);
+        } catch (error) {
+          console.error("Erro ao carregar reviews:", error);
+          setReviews([]);
+        }
       } else {
         setLoading(false);
       }
@@ -57,6 +66,12 @@ const Pedidos = () => {
 
     loadOrdersAndReviews();
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (route.params?.status) {
+      handlePaymentStatus(route.params.status);
+    }
+  }, [route.params?.status]);
 
   const loadOrders = async () => {
     try {
@@ -68,7 +83,7 @@ const Pedidos = () => {
         ["pending", "accepted", "in_progress"].includes(order.status)
       );
       const completedOrders = data.filter((order) =>
-        ["completed", "cancelled", "paid"].includes(order.status)
+        ["completed", "cancelled", "paid", "PAID"].includes(order.status)
       );
 
       setOrders({
@@ -80,6 +95,21 @@ const Pedidos = () => {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePaymentStatus = (status) => {
+    switch (status) {
+      case "success":
+        Alert.alert("Sucesso", "Pagamento realizado com sucesso!");
+        loadOrders(); // Recarrega os pedidos
+        break;
+      case "failure":
+        Alert.alert("Erro", "Não foi possível processar o pagamento");
+        break;
+      case "pending":
+        Alert.alert("Pendente", "Seu pagamento está em processamento");
+        break;
     }
   };
 
@@ -160,6 +190,8 @@ const Pedidos = () => {
             order={item}
             statusLabels={STATUS_LABELS}
             onStatusUpdate={loadOrders}
+            isOrderPage={true}
+            reviews={reviews}
           />
         )}
         ListEmptyComponent={

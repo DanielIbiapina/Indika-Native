@@ -28,6 +28,9 @@ import {
   RemoveButton,
   RemoveButtonText,
   LoaderContainer,
+  SectionTitle,
+  SectionSubtitle,
+  MemberInfo,
 } from "./styles"; // Importando os estilos
 
 const ComunidadeDetalhes = () => {
@@ -50,6 +53,7 @@ const ComunidadeDetalhes = () => {
       setLoading(true);
       const data = await communityService.getById(id);
       setCommunity(data);
+      console.log(data);
 
       if (user) {
         setIsMember(data.members.some((member) => member.id === user.id));
@@ -184,34 +188,35 @@ const ComunidadeDetalhes = () => {
       </CommunityCard>
 
       <MemberList>
-        <Text style={{ marginBottom: 16, fontSize: 18 }}>Membros</Text>
-        <Text>{community._count.members} participantes</Text>
+        <SectionTitle>Membros</SectionTitle>
+        <SectionSubtitle>
+          {community._count.members} participantes
+        </SectionSubtitle>
 
-        <Text style={{ fontSize: 16, marginTop: 32 }}>Administradores</Text>
+        <SectionTitle>Administradores</SectionTitle>
         {community.admins.map((admin) => (
           <MemberItem key={admin.id}>
             <MemberAvatar source={{ uri: admin.avatar }} />
-            <View>
+            <MemberInfo>
               <MemberName>{admin.name}</MemberName>
               <AdminText>Admin</AdminText>
-            </View>
+            </MemberInfo>
           </MemberItem>
         ))}
-      </MemberList>
 
-      <MemberList>
-        <Text style={{ fontSize: 16, marginTop: 16 }}>Participantes</Text>
+        <SectionTitle style={{ marginTop: 24 }}>Participantes</SectionTitle>
         {community.members.map((member) => (
           <MemberItem key={member.id}>
             <MemberAvatar source={{ uri: member.avatar }} />
-            <View>
+            <MemberInfo>
               <MemberName>{member.name}</MemberName>
-              {isAdmin && !isMember && (
+            </MemberInfo>
+            {isAdmin &&
+              !community.admins.some((admin) => admin.id === member.id) && (
                 <RemoveButton onPress={() => handleRemoveMember(member.id)}>
                   <RemoveButtonText>Remover</RemoveButtonText>
                 </RemoveButton>
               )}
-            </View>
           </MemberItem>
         ))}
       </MemberList>

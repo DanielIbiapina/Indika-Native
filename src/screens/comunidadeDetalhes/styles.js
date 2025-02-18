@@ -5,6 +5,7 @@ export const Container = styled.ScrollView`
   flex: 1;
   padding: 20px;
   background-color: #f5f5f5;
+  margin-bottom: 20px;
 `;
 
 export const LoaderContainer = styled.View`
@@ -96,13 +97,31 @@ export const ActionButtonText = styled.Text`
 `;
 
 export const MemberList = styled.View`
-  margin-top: 32px;
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+`;
+
+export const SectionTitle = styled.Text`
+  font-size: 20px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: 8px;
+`;
+
+export const SectionSubtitle = styled.Text`
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
 `;
 
 export const MemberItem = styled.View`
   flex-direction: row;
   align-items: center;
-  margin-bottom: 16px;
+  padding: 12px;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
 `;
 
 export const MemberAvatar = styled.Image`
@@ -110,25 +129,34 @@ export const MemberAvatar = styled.Image`
   height: 48px;
   border-radius: 24px;
   margin-right: 12px;
+  background-color: #f0f0f0;
+`;
+
+export const MemberInfo = styled.View`
+  flex: 1;
 `;
 
 export const MemberName = styled.Text`
   font-size: 16px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  font-weight: 500;
 `;
 
 export const AdminText = styled.Text`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.primary};
+  margin-top: 4px;
 `;
 
 export const RemoveButton = styled.TouchableOpacity`
-  padding: 8px;
-  background-color: #f44336;
-  border-radius: 8px;
-  margin-top: 8px;
+  padding: 8px 16px;
+  background-color: ${({ theme }) => `${theme.colors.error}15`};
+  border-radius: 16px;
+  margin-left: 8px;
 `;
 
 export const RemoveButtonText = styled.Text`
-  color: white;
-  font-size: 12px;
+  color: ${({ theme }) => theme.colors.error};
+  font-size: 14px;
+  font-weight: 500;
 `;

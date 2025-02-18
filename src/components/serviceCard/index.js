@@ -6,7 +6,13 @@ const ServiceCard = ({ icon, title }) => {
   const navigation = useNavigation();
 
   return (
-    <Card onPress={() => navigation.navigate("ServicoDetalhes", { title })}>
+    <Card
+      onPress={() =>
+        navigation.navigate("ServicosPorCategoria", {
+          category: title,
+        })
+      }
+    >
       <Icon>{icon}</Icon>
       <Title>{title}</Title>
     </Card>

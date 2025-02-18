@@ -1,8 +1,15 @@
 import styled from "styled-components/native";
 
-export const Container = styled.View`
-  padding: 16px;
+export const Container = styled.SafeAreaView`
+  flex: 1;
   background-color: #f5f5f5;
+`;
+
+export const ScrollContainer = styled.ScrollView.attrs({
+  contentContainerStyle: {
+    padding: 16,
+  },
+})`
   flex: 1;
 `;
 
@@ -39,10 +46,15 @@ export const TextArea = styled.TextInput`
   text-align-vertical: top;
 `;
 
-export const Switch = styled.View`
+export const SwitchContainer = styled.View`
   flex-direction: row;
   align-items: center;
   gap: 8px;
+`;
+
+export const SwitchLabel = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.primary};
 `;
 
 export const Button = styled.TouchableOpacity`
@@ -77,12 +89,10 @@ export const Header = styled.View`
 `;
 
 export const BackButton = styled.TouchableOpacity`
-  background: none;
   flex-direction: row;
   align-items: center;
   gap: 8px;
   font-size: 14px;
   padding: 8px;
   border-radius: 8px;
-  transition: all 0.2s;
 `;

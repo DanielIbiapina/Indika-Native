@@ -49,6 +49,8 @@ import { View, Text, ScrollView, ActivityIndicator, Alert } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { chatService } from "../../services/chatService";
+import { messageService } from "../../services/messageService";
 
 const ServicoDetalhes = () => {
   const { id } = useRoute().params;
@@ -88,7 +90,7 @@ const ServicoDetalhes = () => {
             serviceId: id,
           });
 
-          const completedOrder = orders.find((o) => o.status === "completed");
+          const completedOrder = orders.find((o) => o.status === "PAID");
           setOrder(completedOrder || null);
 
           const { communities } = await communityService.getUserCommunities();
@@ -109,6 +111,10 @@ const ServicoDetalhes = () => {
     loadData();
   }, [id, signed, user]);
 
+  const getInitialMessage = (serviceName) => {
+    return `Quer entrar em contato com o prestador para tirar alguma dúvida? Deixe uma mensagem aqui e abrirá um chat automaticamente`;
+  };
+
   const handleBookingSubmit = async () => {
     try {
       setLoading(true);
@@ -126,11 +132,23 @@ const ServicoDetalhes = () => {
         description: bookingData.description,
       };
 
-      await orderService.create(orderData);
-      navigation.navigate("TabNavigator", {
-        screen: "Pedidos",
-      });
+      const newOrder = await orderService.create(orderData);
+
+      if (bookingData.description.trim()) {
+        const chat = await chatService.createChat(service.providerId);
+
+        if (chat) {
+          await messageService.sendMessage(chat.id, bookingData.description);
+          navigation.navigate("Mensagens", {
+            providerId: service.providerId,
+            chatId: chat.id,
+          });
+        }
+      } else {
+        navigation.navigate("Pedidos");
+      }
     } catch (err) {
+      console.error("Erro completo:", err);
       setError(err.response?.data?.message || "Erro ao agendar serviço");
     } finally {
       setLoading(false);
@@ -148,7 +166,7 @@ const ServicoDetalhes = () => {
       const updatedReviews = await reviewService.listByService(id);
       setReviews(updatedReviews);
 
-      if (recommendationStatus === "indica") {
+      if (reviewData.recommendation === "indica") {
         await recommendService.recommend(service.providerId, communityIds);
         setRecommendationStatus(
           "Você recomendou este serviço para suas comunidades!"
@@ -195,7 +213,7 @@ const ServicoDetalhes = () => {
     );
   if (error) return <ErrorMessage>{error}</ErrorMessage>;
   if (!service) return <ErrorMessage>Serviço não encontrado</ErrorMessage>;
-
+  console.log(order);
   return (
     <Container>
       <ScrollView
@@ -275,18 +293,20 @@ const ServicoDetalhes = () => {
             )}
 
             <TextInput
-              placeholder="Descrição"
+              placeholder={getInitialMessage(service.title)}
               placeholderTextColor="#280659"
               value={bookingData.description}
               onChangeText={(description) =>
                 setBookingData({ ...bookingData, description })
               }
               multiline
+              numberOfLines={4}
+              textAlignVertical="top"
             />
 
             <Button onPress={handleBookingSubmit}>
               <ButtonText>
-                {loading ? "Carregando..." : "Confirmar Agendamento"}
+                {loading ? "Carregando..." : "Confirmar e Iniciar Conversa"}
               </ButtonText>
             </Button>
 
@@ -341,7 +361,7 @@ const ServicoDetalhes = () => {
           </SectionTitle>
 
           {order &&
-            order.status === "completed" &&
+            order.status === "PAID" &&
             !reviews.some(
               (r) => r.orderId === order.id && r.reviewerId === user?.id
             ) && (

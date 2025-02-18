@@ -193,14 +193,16 @@ export const DateTimeText = styled.Text`
 `;
 
 export const TextInput = styled.TextInput`
-  height: 48px;
+  min-height: 120px;
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   margin-bottom: 16px;
-  padding: 8px 16px;
+  padding: 16px;
   background-color: #fff;
   color: ${({ theme }) => theme.colors.text.primary};
+  font-size: 16px;
+  line-height: 24px;
 `;
 
 export const Button = styled.TouchableOpacity`

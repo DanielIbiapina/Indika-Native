@@ -41,6 +41,8 @@ export const StatusBadge = styled.View`
         return "#e6f4ea";
       case "paid":
         return "#e6f4ea";
+      case "PAID":
+        return "#e6f4ea";
       case "cancelled":
         return "#ffebee";
       default:
@@ -59,6 +61,8 @@ export const StatusBadge = styled.View`
         return "#1e8e3e";
       case "paid":
         return "#1e8e3e";
+      case "PAID":
+        return "#e6f4ea";
       case "cancelled":
         return "#c62828";
       default:

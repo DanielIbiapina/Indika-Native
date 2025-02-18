@@ -39,6 +39,11 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus }) => {
       return;
     }
 
+    if (!recommendation) {
+      setError("Por favor, selecione se você indica ou não o serviço");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
@@ -46,9 +51,12 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus }) => {
         orderId,
         rating,
         comment,
+        recommendation,
       });
       setComment("");
       setRating(0);
+      setRecommendation(null);
+      setRecommendationStatus(recommendation);
     } catch (err) {
       setError(err.message || "Erro ao enviar avaliação");
     } finally {

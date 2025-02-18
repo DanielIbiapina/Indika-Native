@@ -22,7 +22,7 @@ const ServiceHighlight = ({
   description,
 }) => {
   const navigation = useNavigation();
-
+  console.log(stats);
   return (
     <Card onPress={() => navigation.navigate("ServicoDetalhes", { id })}>
       <ServiceImage source={{ uri: image }} resizeMode="cover" />

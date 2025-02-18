@@ -21,7 +21,6 @@ export const communityService = {
 
   create: async (formData) => {
     try {
-      console.log(formData);
       const response = await api.post("/communities", formData, {
         headers: {
           "Content-Type": "multipart/form-data",

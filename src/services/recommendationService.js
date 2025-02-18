@@ -4,12 +4,15 @@ export const recommendService = {
   // Método para recomendar um serviço para múltiplas comunidades
   recommend: async (providerId, communityIds) => {
     try {
+      console.log("providerId", providerId);
+      console.log("communityIds", communityIds);
       const response = await api.post(
         `/recommendations/${providerId}/recommend/`,
         {
           communityIds, // Enviando o array de communityIds
         }
       );
+      console.log(response);
       return response.data; // Retorna a resposta, se necessário
     } catch (error) {
       throw handleError(error, "Erro ao recomendar o serviço");

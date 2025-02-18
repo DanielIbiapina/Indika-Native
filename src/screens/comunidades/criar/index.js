@@ -1,16 +1,19 @@
 import React, { useState } from "react";
+import { Switch as RNSwitch, Text } from "react-native";
 import { useNavigation } from "@react-navigation/native"; // React Navigation para navegação
 import { communityService } from "../../../services/communityService";
 import { Ionicons } from "@expo/vector-icons"; // Biblioteca de ícones do Expo
 import {
   Container,
+  ScrollContainer,
   Header,
   BackButton,
   Title,
   Form,
   Input,
   TextArea,
-  Switch,
+  SwitchContainer,
+  SwitchLabel,
   Button,
   ErrorMessage,
 } from "./styles";
@@ -28,11 +31,10 @@ const CriarComunidade = () => {
     categories: [],
   });
 
-  const handleChange = (e, name) => {
-    const { value, checked, type } = e;
+  const handleChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
   };
 
@@ -49,18 +51,27 @@ const CriarComunidade = () => {
 
     try {
       const formDataToSend = new FormData();
+
+      // Adiciona a imagem se houver uma nova
+      if (formData.image?.uri) {
+        formDataToSend.append("image", {
+          uri: formData.image.uri,
+          type: formData.image.type || "image/jpeg",
+          name: formData.image.fileName || "community-image.jpg",
+        });
+      }
+
+      // Adiciona os outros dados da comunidade
       formDataToSend.append("name", formData.name);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("isPrivate", formData.isPrivate);
       formDataToSend.append("categories", JSON.stringify(formData.categories));
 
-      if (formData.image?.file) {
-        formDataToSend.append("image", formData.image.file);
-      }
-
-      await communityService.create(formDataToSend);
-      navigation.navigate("Comunidades"); // Navegação para a tela de comunidades
+      const response = await communityService.create(formDataToSend);
+      // Navega para a página de detalhes da comunidade recém-criada
+      navigation.replace("ComunidadeDetalhes", { id: response.id });
     } catch (err) {
+      console.error("Erro ao criar:", err);
       setError(err.message || "Erro ao criar comunidade");
     } finally {
       setLoading(false);
@@ -69,51 +80,56 @@ const CriarComunidade = () => {
 
   return (
     <Container>
-      <Header>
-        <BackButton onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#666" />
-          Voltar
-        </BackButton>
-        <Title>Criar Comunidade</Title>
-      </Header>
+      <ScrollContainer>
+        <Header>
+          <BackButton onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="#666" />
+            <Text style={{ color: "#666" }}>Voltar</Text>
+          </BackButton>
+          <Title>Criar Comunidade</Title>
+        </Header>
 
-      <Form onSubmit={handleSubmit}>
-        <ImageUpload
-          value={formData.image}
-          onChange={handleImageChange}
-          maxSize={5} // 5MB
-          label="Capa da Comunidade"
-        />
-
-        <Input
-          placeholder="Nome da comunidade"
-          value={formData.name}
-          onChangeText={(text) => handleChange({ value: text }, "name")}
-          required
-        />
-
-        <TextArea
-          placeholder="Descrição da comunidade"
-          value={formData.description}
-          onChangeText={(text) => handleChange({ value: text }, "description")}
-          required
-        />
-
-        <Switch>
-          <input
-            type="checkbox"
-            checked={formData.isPrivate}
-            onChange={(e) => handleChange(e, "isPrivate")}
+        <Form>
+          <ImageUpload
+            value={formData.image}
+            onChange={handleImageChange}
+            maxSize={5}
+            label="Capa da Comunidade"
           />
-          <span>Comunidade privada</span>
-        </Switch>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+          <Input
+            placeholder="Nome da comunidade"
+            value={formData.name}
+            onChangeText={(text) => handleChange("name", text)}
+          />
 
-        <Button onPress={handleSubmit} disabled={loading}>
-          {loading ? "Criando..." : "Criar Comunidade"}
-        </Button>
-      </Form>
+          <TextArea
+            placeholder="Descrição da comunidade"
+            value={formData.description}
+            onChangeText={(text) => handleChange("description", text)}
+            multiline
+            numberOfLines={4}
+          />
+
+          <SwitchContainer>
+            <RNSwitch
+              value={formData.isPrivate}
+              onValueChange={(value) => handleChange("isPrivate", value)}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={formData.isPrivate ? "#422680" : "#f4f3f4"}
+            />
+            <SwitchLabel>Comunidade privada</SwitchLabel>
+          </SwitchContainer>
+
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+
+          <Button onPress={handleSubmit} disabled={loading}>
+            <Text style={{ color: "white" }}>
+              {loading ? "Criando..." : "Criar Comunidade"}
+            </Text>
+          </Button>
+        </Form>
+      </ScrollContainer>
     </Container>
   );
 };

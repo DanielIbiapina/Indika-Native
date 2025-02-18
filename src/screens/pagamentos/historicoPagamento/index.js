@@ -44,7 +44,7 @@ const HistoricoPagamento = () => {
     try {
       setLoading(true);
       const response = await paymentService.getPaymentHistory();
-      console.log(response.data);
+
       // Filtrar transações baseado no tipo selecionado
       let filteredTransactions = response.data;
       if (filter === "received") {

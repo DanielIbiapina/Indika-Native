@@ -136,6 +136,7 @@ const Home = () => {
 
         {Object.entries(services).map(([categoryId, categoryServices]) => {
           const category = categories.find((cat) => cat.id === categoryId);
+
           return (
             <ServicesSection key={categoryId}>
               <SectionTitle>

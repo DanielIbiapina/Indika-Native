@@ -44,7 +44,7 @@ const Saques = () => {
   const loadPaymentMethod = async () => {
     try {
       const response = await paymentService.getPaymentMethod();
-      console.log("Método de pagamento carregado:", response.data);
+
       setPaymentMethod(response.data);
     } catch (error) {
       if (error.response?.status === 400) {
@@ -78,7 +78,6 @@ const Saques = () => {
   };
 
   useEffect(() => {
-    console.log("Tela de Saques montada");
     loadPaymentMethod();
     loadBalance();
   }, []);

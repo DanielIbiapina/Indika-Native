@@ -64,6 +64,7 @@ const STATUS_LABELS = {
   accepted: "Aceito",
   in_progress: "Em andamento",
   completed: "Concluído",
+  PAID: "Pago",
   cancelled: "Cancelado",
 };
 
@@ -105,7 +106,7 @@ const Profile = () => {
     try {
       setLoading(true);
       const profile = await userService.getProfile();
-      console.log(profile);
+
       setProfileData(profile);
     } catch (err) {
       setError("Erro ao carregar dados do perfil");
@@ -269,7 +270,7 @@ const Profile = () => {
                 <OptionText>Histórico de Pagamentos</OptionText>
               </OptionButton>
 
-              <OptionButton
+              {/*<OptionButton
                 onPress={() => {
                   setShowPaymentOptions(false);
                   navigation.navigate("Saques");
@@ -279,7 +280,7 @@ const Profile = () => {
                   <Ionicons name="cash-outline" size={24} color="#422680" />
                 </OptionIcon>
                 <OptionText>Realizar Saque</OptionText>
-              </OptionButton>
+              </OptionButton>*/}
 
               <OptionButton
                 onPress={() => {
@@ -482,7 +483,7 @@ const Profile = () => {
             <MenuItemText>Pagamentos</MenuItemText>
           </MenuItem>
 
-          {user?.isAdmin && (
+          {/*{user?.isAdmin && (
             <MenuItem onPress={() => navigation.navigate("AdminPayments")}>
               <Ionicons
                 name="shield-checkmark-outline"
@@ -491,7 +492,7 @@ const Profile = () => {
               />
               <MenuItemText>Gerenciar Pagamentos</MenuItemText>
             </MenuItem>
-          )}
+          )}*/}
 
           <Divider />
 
