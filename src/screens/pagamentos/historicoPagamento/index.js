@@ -5,8 +5,6 @@ import { useAuth } from "../../../contexts/authContext";
 import { paymentService } from "../../../services/paymentService";
 import {
   Container,
-  Header,
-  Title,
   FilterContainer,
   FilterButton,
   FilterText,
@@ -140,10 +138,6 @@ const HistoricoPagamento = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>Histórico de Pagamentos</Title>
-      </Header>
-
       <FilterContainer>
         <FilterButton
           active={filter === "all"}

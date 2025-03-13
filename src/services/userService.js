@@ -44,6 +44,34 @@ export const userService = {
       throw handleError(error, "Erro ao obter pedidos do usuário");
     }
   },
+
+  // Verificar se CPF já existe
+  checkCPF: async (cpf) => {
+    try {
+      const response = await api.post("/users/check-cpf", { cpf });
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao verificar CPF");
+    }
+  },
+
+  // Obter o perfil público de um usuário
+  getPublicProfile: async (userId) => {
+    try {
+      console.log("Iniciando getPublicProfile para userId:", userId);
+      const response = await api.get(`/users/${userId}/public`);
+      console.log("Resposta do getPublicProfile:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Erro detalhado no getPublicProfile:",
+        error.response || error
+      );
+      throw new Error("Erro ao obter perfil do usuário");
+    }
+  },
+
+  // Obter serviços de um usuário específico
 };
 
 // Função auxiliar para tratar erros

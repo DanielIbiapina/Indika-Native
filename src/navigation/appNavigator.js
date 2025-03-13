@@ -26,7 +26,7 @@ import TestePagamento from "../screens/pagamentos/testePagamento";
 
 // Importar a nova tela
 import ProcessarPagamento from "../screens/pagamentos/processarPagamento";
-import AdminPayments from "../screens/admin/adminPayments";
+
 import Configuracoes from "../screens/configuracoes";
 import DadosPessoais from "../screens/configuracoes/dadosPessoais";
 import Seguranca from "../screens/configuracoes/seguranca";
@@ -38,6 +38,10 @@ import CentralAjuda from "../screens/configuracoes/centralDeAjuda";
 import TermosUso from "../screens/configuracoes/termosDeUso";
 import PoliticaPrivacidade from "../screens/configuracoes/politicaDePrivacidade";
 import Mensagens from "../screens/mensagens";
+import Pagamentos from "../screens/pagamentos";
+import AllReviews from "../screens/todasAvaliacoes"; // Importar a nova tela
+import PerfilVisitante from "../screens/perfilVisitante"; // Adicionar este import
+import PedidoDetalhes from "../screens/pedidoDetalhes";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -77,69 +81,144 @@ const MainStack = () => {
           },
         }}
       />
-      <Stack.Screen name="HistoricoPagamento" component={HistoricoPagamento} />
+      <Stack.Screen
+        name="HistoricoPagamento"
+        component={HistoricoPagamento}
+        options={{
+          headerShown: true,
+          title: "Histórico de Pagamentos",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
       <Stack.Screen name="Saques" component={Saques} />
       <Stack.Screen
         name="ConfigurarPagamento"
         component={SetupMetodoPagamento}
+        options={{
+          headerShown: true,
+          title: "Configurar Recebimentos",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="TestePagamento"
         component={TestePagamento}
         options={{ title: "Teste de Pagamento" }}
       />
-      <Stack.Screen
-        name="AdminPayments"
-        component={AdminPayments}
-        options={{
-          title: "Gerenciar Pagamentos",
-          headerShown: true,
-        }}
-      />
+
       <Stack.Screen
         name="DadosPessoais"
         component={DadosPessoais}
-        options={{ title: "Dados Pessoais" }}
+        options={{
+          headerShown: true,
+          title: "Dados Pessoais",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="Seguranca"
         component={Seguranca}
-        options={{ title: "Segurança" }}
+        options={{
+          headerShown: true,
+          title: "Segurança",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="Notificacoes"
         component={Notificacoes}
-        options={{ title: "Notificações" }}
+        options={{
+          headerShown: true,
+          title: "Notificações",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="Idioma"
         component={Idioma}
-        options={{ title: "Idioma" }}
+        options={{
+          headerShown: true,
+          title: "Idioma",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="VisibilidadePerfil"
         component={VisibilidadePerfil}
-        options={{ title: "Visibilidade do Perfil" }}
+        options={{
+          headerShown: true,
+          title: "Visibilidade do Perfil",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="Localizacao"
         component={Localizacao}
-        options={{ title: "Localização" }}
+        options={{
+          headerShown: true,
+          title: "Localização",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="CentralAjuda"
         component={CentralAjuda}
-        options={{ title: "Central de Ajuda" }}
+        options={{
+          headerShown: true,
+          title: "Central de Ajuda",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="TermosUso"
         component={TermosUso}
-        options={{ title: "Termos de Uso" }}
+        options={{
+          headerShown: true,
+          title: "Termos de Uso",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="PoliticaPrivacidade"
         component={PoliticaPrivacidade}
-        options={{ title: "Política de Privacidade" }}
+        options={{
+          headerShown: true,
+          title: "Política de Privacidade",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
       />
       <Stack.Screen
         name="Mensagens"
@@ -147,6 +226,43 @@ const MainStack = () => {
         options={{
           headerShown: true,
           title: "Mensagens",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
+      <Stack.Screen
+        name="Pagamentos"
+        component={Pagamentos}
+        options={{
+          headerShown: true,
+          title: "Pagamentos",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
+      <Stack.Screen name="TodasAvaliacoes" component={AllReviews} />
+      <Stack.Screen
+        name="PerfilVisitante"
+        component={PerfilVisitante}
+        options={{
+          headerShown: true,
+          title: "Perfil",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
+      <Stack.Screen
+        name="PedidoDetalhes"
+        component={PedidoDetalhes}
+        options={{
+          headerShown: true,
+          title: "Detalhes do Pedido",
           headerTintColor: "#422680",
           headerStyle: {
             backgroundColor: "#fff",

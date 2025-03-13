@@ -2,22 +2,23 @@ import styled from "styled-components/native";
 
 export const Card = styled.View`
   background-color: white;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
   shadow-color: #000;
   shadow-opacity: 0.1;
   shadow-radius: 4px;
-  elevation: 2;
+  shadow-offset: 0px 2px;
+  elevation: 4;
   flex-direction: row;
   gap: 16px;
 `;
 
 export const ServiceImage = styled.Image`
-  width: 120px;
-  height: 120px;
+  width: 80px;
+  height: 80px;
   resize-mode: cover;
-  border-radius: 4px;
+  border-radius: 8px;
 `;
 
 export const ServiceInfo = styled.View`
@@ -26,8 +27,9 @@ export const ServiceInfo = styled.View`
 
 export const Title = styled.Text`
   margin: 0 0 8px;
-  font-size: 18px;
-  font-weight: bold;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
 `;
 
 export const Category = styled.Text`
@@ -47,6 +49,11 @@ export const Rating = styled.View`
   align-items: center;
   gap: 4px;
   color: #ffc107;
+`;
+
+export const RatingText = styled.Text`
+  color: ${({ theme }) => theme.colors.text.primary};
+  font-size: 14px;
 `;
 
 export const Actions = styled.View`

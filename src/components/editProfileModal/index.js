@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Modal, ActivityIndicator } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Ícones do React Native
+import { Modal } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { userService } from "../../services/userService";
 import ImageUpload from "../imageUpload";
 import {
@@ -16,68 +16,45 @@ import {
 
 const EditProfileModal = ({ profile, onUpdate, onClose }) => {
   const [formData, setFormData] = useState({
-    name: profile.name,
-    email: profile.email,
+    name: profile?.name || "",
+    email: profile?.email || "",
     avatar: null,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const handleChange = (name, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleAvatarChange = (imageData) => {
-    setFormData((prev) => ({
-      ...prev,
-      avatar: imageData,
-    }));
-  };
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
       setError("");
 
-      let updatedProfile = { ...profile };
+      const updatedProfile = { ...profile };
 
-      // Primeiro, atualiza o avatar se houver uma nova imagem
+      // Atualiza avatar se houver uma nova imagem
       if (formData.avatar?.uri) {
         const avatarFormData = new FormData();
         avatarFormData.append("avatar", {
           uri: formData.avatar.uri,
-          type: formData.avatar.type || "image/jpeg", // Garante que sempre tenha um tipo
-          name: formData.avatar.fileName || "avatar.jpg", // Garante que sempre tenha um nome
+          type: formData.avatar.type || "image/jpeg",
+          name: formData.avatar.fileName || "avatar.jpg",
         });
 
         const avatarResponse = await userService.updateAvatar(avatarFormData);
-        if (avatarResponse?.avatar) {
-          updatedProfile.avatar = avatarResponse.avatar;
-        }
+        updatedProfile.avatar = avatarResponse?.avatar || updatedProfile.avatar;
       }
 
-      // Depois, atualiza os outros dados do perfil se foram modificados
+      // Atualiza nome se foi modificado
       if (formData.name !== profile.name) {
         const profileResponse = await userService.updateProfile({
           name: formData.name,
           isServiceProvider: profile.isServiceProvider,
         });
-        if (profileResponse) {
-          updatedProfile = {
-            ...updatedProfile,
-            ...profileResponse,
-          };
-        }
+        Object.assign(updatedProfile, profileResponse);
       }
 
-      // Atualiza o perfil no contexto/estado pai
       onUpdate(updatedProfile);
       onClose();
     } catch (err) {
-      console.error("Erro ao atualizar:", err);
       setError(err.message || "Erro ao atualizar perfil");
     } finally {
       setLoading(false);
@@ -85,39 +62,54 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
   };
 
   return (
-    <Modal visible={true} transparent={true} animationType="fade">
+    <Modal visible transparent animationType="fade">
       <ModalOverlay>
         <ModalContent>
           <ModalHeader>
-            <Ionicons name="close" size={24} color="#666" onPress={onClose} />
+            <Ionicons
+              name="close"
+              size={24}
+              color="#666"
+              onPress={onClose}
+              testID="close-modal-button"
+            />
           </ModalHeader>
 
           <Form>
             <ImageUpload
               value={formData.avatar}
-              onChange={handleAvatarChange}
+              onChange={(value) =>
+                setFormData((prev) => ({ ...prev, avatar: value }))
+              }
               maxSize={2}
               label="Foto de perfil"
-              currentImage={profile.avatar} // Passa a imagem atual como referência
+              currentImage={profile.avatar}
+              testID="avatar-upload"
             />
 
             <Input
               placeholder="Nome completo"
               value={formData.name}
-              onChangeText={(value) => handleChange("name", value)}
+              onChangeText={(value) =>
+                setFormData((prev) => ({ ...prev, name: value }))
+              }
+              testID="name-input"
             />
 
             <Input
               placeholder="E-mail"
               value={formData.email}
-              onChangeText={(value) => handleChange("email", value)}
-              keyboardType="email-address"
-              editable={false} // Email não pode ser editado
+              editable={false}
+              testID="email-input"
             />
 
             {error && <ErrorMessage>{error}</ErrorMessage>}
 
-            <Button onPress={handleSubmit} disabled={loading}>
+            <Button
+              onPress={handleSubmit}
+              disabled={loading}
+              testID="save-button"
+            >
               <ButtonText>
                 {loading ? "Salvando..." : "Salvar alterações"}
               </ButtonText>

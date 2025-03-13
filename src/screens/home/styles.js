@@ -15,7 +15,7 @@ export const LoaderContainer = styled.View`
 export const Title = styled.Text`
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.colors.text.primary};
   margin-vertical: 16px;
 `;
 
@@ -68,7 +68,7 @@ export const SectionTitle = styled.View`
 export const SectionTitleText = styled.Text`
   font-size: 16px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.colors.text.primary};
 `;
 
 export const ViewAllText = styled.Text`

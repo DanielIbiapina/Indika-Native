@@ -1,146 +1,75 @@
-import React, { useState, useEffect } from "react";
-import { ActivityIndicator, Alert, Linking, ScrollView } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { paymentService } from "../../../services/paymentService";
-import { stripeService } from "../../../services/stripeService";
-import PaymentMethodSelector from "../../../components/payment/paymentMethodSelector";
-import PixForm from "../../../components/payment/pixForm";
-import BankAccountForm from "../../../components/payment/bankAccountForm";
-import StripeForm from "../../../components/payment/stripeForm";
+import React from "react";
+import { Linking, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
   Container,
-  Header,
-  Title,
-  FormContainer,
-  ErrorText,
   ScrollContent,
-  SubTitle,
+  ContentCard,
+  InstructionItem,
+  InstructionNumber,
+  InstructionText,
+  MPButton,
+  MPButtonText,
+  TipCard,
+  TipText,
+  InfoSection,
+  InfoText,
 } from "./styles";
-import { PAYMENT_METHODS } from "../../../constants/paymentMethods";
+
+const MP_URL = "https://www.mercadopago.com.br/home";
 
 const SetupMetodoPagamento = () => {
-  const navigation = useNavigation();
-  const [selectedMethod, setSelectedMethod] = useState("pix");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [initialData, setInitialData] = useState(null);
-
-  const loadCurrentMethod = async () => {
-    try {
-      const response = await paymentService.getPaymentMethod();
-      if (response.data) {
-        setInitialData(response.data);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar método atual:", error);
-    }
+  const handleOpenMP = () => {
+    Linking.openURL(MP_URL);
   };
-
-  const handleSubmit = async (formData) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = {
-        type: selectedMethod,
-        ...formData,
-      };
-
-      await paymentService.setupPaymentMethod(data);
-      Alert.alert("Sucesso", "Método de pagamento configurado com sucesso");
-      navigation.goBack();
-    } catch (error) {
-      setError("Erro ao salvar método de pagamento");
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStripeConnect = async () => {
-    try {
-      setLoading(true);
-      const accountLink = await stripeService.createConnectAccount();
-      await Linking.openURL(accountLink);
-    } catch (error) {
-      setError("Erro ao conectar com Stripe");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const renderForm = () => {
-    switch (selectedMethod) {
-      case "pix":
-        return (
-          <PixForm
-            onSubmit={handleSubmit}
-            initialData={initialData}
-            loading={loading}
-          />
-        );
-      case "bank_account":
-        return (
-          <BankAccountForm
-            onSubmit={handleSubmit}
-            initialData={initialData}
-            loading={loading}
-          />
-        );
-      case "stripe":
-        return (
-          <StripeForm
-            onConnect={handleStripeConnect}
-            onDisconnect={async () => {
-              try {
-                await stripeService.disconnectStripeAccount();
-                setInitialData(null);
-              } catch (error) {
-                setError("Erro ao desconectar conta Stripe");
-              }
-            }}
-            loading={loading}
-            connected={initialData?.stripeAccountId != null}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  useEffect(() => {
-    loadCurrentMethod();
-  }, []);
 
   return (
     <Container>
-      <Header>
-        <Title>Configurar Recebimentos</Title>
-        {initialData && (
-          <SubTitle>
-            Método atual:{" "}
-            {PAYMENT_METHODS[initialData.type]?.title || "Não definido"}
-          </SubTitle>
-        )}
-      </Header>
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ flexGrow: 1 }}
-      >
+      <ScrollView>
         <ScrollContent>
-          <PaymentMethodSelector
-            selectedMethod={selectedMethod}
-            onSelect={setSelectedMethod}
-            showDisabled={false}
-          />
+          <ContentCard>
+            <InstructionItem>
+              <InstructionNumber>1</InstructionNumber>
+              <InstructionText>
+                Acesse sua conta no Mercado Pago
+              </InstructionText>
+            </InstructionItem>
 
-          {selectedMethod && (
-            <FormContainer>
-              {renderForm()}
-              {error && <ErrorText>{error}</ErrorText>}
-            </FormContainer>
-          )}
+            <InstructionItem>
+              <InstructionNumber>2</InstructionNumber>
+              <InstructionText>
+                Configure sua conta bancária para recebimentos
+              </InstructionText>
+            </InstructionItem>
+
+            <InstructionItem>
+              <InstructionNumber>3</InstructionNumber>
+              <InstructionText>
+                Defina suas preferências de transferência automática
+              </InstructionText>
+            </InstructionItem>
+
+            <MPButton onPress={handleOpenMP}>
+              <Ionicons name="open-outline" size={24} color="#FFF" />
+              <MPButtonText>Abrir Mercado Pago</MPButtonText>
+            </MPButton>
+          </ContentCard>
+
+          <TipCard>
+            <Ionicons name="bulb-outline" size={24} color="#422680" />
+            <TipText>
+              Dica: Ative as transferências automáticas para receber seu
+              dinheiro assim que estiver disponível
+            </TipText>
+          </TipCard>
+
+          <InfoSection>
+            <InfoText>
+              Todos os pagamentos são processados de forma segura através do
+              Mercado Pago. O dinheiro fica disponível na sua conta em até 14
+              dias após a conclusão do serviço.
+            </InfoText>
+          </InfoSection>
         </ScrollContent>
       </ScrollView>
     </Container>

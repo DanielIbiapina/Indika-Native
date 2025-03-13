@@ -40,6 +40,11 @@ export const Rating = styled.View`
   gap: 2px;
 `;
 
+export const RatingText = styled.Text`
+  font-size: 12px;
+  color: #666;
+`;
+
 export const Price = styled.Text`
   font-size: 12px;
   color: ${({ theme }) => theme.colors.primary};

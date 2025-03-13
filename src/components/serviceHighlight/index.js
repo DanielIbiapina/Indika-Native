@@ -1,38 +1,57 @@
 import React from "react";
-import { Text } from "react-native"; // Adicionar importação do Text
-import { useNavigation } from "@react-navigation/native"; // React Navigation para navegação em React Native
+import { useNavigation } from "@react-navigation/native";
 import {
   Card,
   ServiceImage,
   ServiceInfo,
   Title,
   Rating,
+  RatingText,
   Price,
   Description,
 } from "./styles";
-import { Feather } from "@expo/vector-icons"; // Utilizando ícones do Expo
+import { Feather } from "@expo/vector-icons";
 
 const ServiceHighlight = ({
   id,
   title,
   image,
   provider,
-  stats,
+  stats = { averageRating: 0, totalReviews: 0 },
   price,
   description,
+  onPress,
+  testID,
 }) => {
   const navigation = useNavigation();
-  console.log(stats);
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+      return;
+    }
+    navigation.navigate("ServicoDetalhes", { id });
+  };
+
+  const formatRating = (rating) => {
+    return Number(rating).toFixed(1);
+  };
+
   return (
-    <Card onPress={() => navigation.navigate("ServicoDetalhes", { id })}>
-      <ServiceImage source={{ uri: image }} resizeMode="cover" />
+    <Card onPress={handlePress} testID={testID}>
+      <ServiceImage
+        source={{ uri: image }}
+        resizeMode="cover"
+        testID={`${testID}-image`}
+      />
       <ServiceInfo>
         <Title numberOfLines={2}>{title}</Title>
         <Rating>
           <Feather name="star" size={12} color="#FFB800" />
-          <Text style={{ fontSize: 12, color: "#666" }}>
-            {stats.averageRating.toFixed(1)} ({stats.totalReviews} avaliações)
-          </Text>
+          <RatingText>
+            {formatRating(stats.averageRating)} ({stats.totalReviews}{" "}
+            avaliações)
+          </RatingText>
         </Rating>
         <Price>{price}</Price>
         <Description numberOfLines={1}>{description}</Description>

@@ -15,6 +15,7 @@ export const reviewService = {
   listByUser: async (userId) => {
     try {
       const response = await api.get(`/reviews/users/${userId}`);
+
       return response.data;
     } catch (error) {
       throw handleError(error, "Erro ao listar avaliações por usuário");
@@ -28,6 +29,16 @@ export const reviewService = {
       return response.data;
     } catch (error) {
       throw handleError(error, "Erro ao criar avaliação");
+    }
+  },
+
+  // Nova função para listar avaliações recebidas
+  listReceivedReviews: async (userId) => {
+    try {
+      const response = await api.get(`/reviews/received-by/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao listar avaliações recebidas");
     }
   },
 };

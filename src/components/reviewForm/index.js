@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useAuth } from "../../contexts/authContext";
 import {
   FormContainer,
@@ -14,49 +14,66 @@ import {
   ButtonText,
   AnimatedContainer,
 } from "./styles";
-import { Animated } from "react-native";
+import { Animated, Alert } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus }) => {
+const RECOMMENDATION_TYPES = {
+  INDICA: "indica",
+  NAO_INDICA: "nao_indica",
+};
+
+const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus, testID }) => {
   const { signed: isLoggedIn } = useAuth();
-  const [rating, setRating] = useState(0);
-  const [comment, setComment] = useState("");
+  const [formData, setFormData] = useState({
+    rating: 0,
+    comment: "",
+    recommendation: null,
+  });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [recommendation, setRecommendation] = useState(null);
   const [indicaScale] = useState(new Animated.Value(1));
   const [naoIndicaScale] = useState(new Animated.Value(1));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateForm = useCallback(() => {
     if (!isLoggedIn) {
       setError("Você precisa estar logado para enviar uma avaliação");
-      return;
+      return false;
     }
 
-    if (rating === 0) {
+    if (formData.rating === 0) {
       setError("Por favor, selecione uma classificação");
-      return;
+      return false;
     }
 
-    if (!recommendation) {
+    if (!formData.recommendation) {
       setError("Por favor, selecione se você indica ou não o serviço");
-      return;
+      return false;
     }
 
+    return true;
+  }, [isLoggedIn, formData]);
+
+  const handleSubmit = async () => {
     try {
+      if (!validateForm()) return;
+
       setLoading(true);
       setError("");
+
       await onSubmit({
         orderId,
-        rating,
-        comment,
-        recommendation,
+        ...formData,
       });
-      setComment("");
-      setRating(0);
-      setRecommendation(null);
-      setRecommendationStatus(recommendation);
+
+      // Resetar form após sucesso
+      setFormData({
+        rating: 0,
+        comment: "",
+        recommendation: null,
+      });
+
+      setRecommendationStatus(formData.recommendation);
+      Alert.alert("Sucesso", "Avaliação enviada com sucesso!");
     } catch (err) {
       setError(err.message || "Erro ao enviar avaliação");
     } finally {
@@ -64,7 +81,7 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus }) => {
     }
   };
 
-  const animateButton = (scaleValue) => {
+  const animateButton = useCallback((scaleValue) => {
     Animated.sequence([
       Animated.spring(scaleValue, {
         toValue: 1.2,
@@ -77,73 +94,97 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus }) => {
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, []);
 
-  const handleRecommendation = (value) => {
-    setRecommendation(value);
-    if (value === "indica") {
-      animateButton(indicaScale);
-    } else {
-      animateButton(naoIndicaScale);
-    }
-  };
+  const handleRecommendation = useCallback(
+    (value) => {
+      setFormData((prev) => ({ ...prev, recommendation: value }));
+      animateButton(
+        value === RECOMMENDATION_TYPES.INDICA ? indicaScale : naoIndicaScale
+      );
+    },
+    [animateButton, indicaScale, naoIndicaScale]
+  );
 
   return (
-    <FormContainer onSubmit={handleSubmit}>
+    <FormContainer testID={testID}>
       <RatingContainer>
         {[1, 2, 3, 4, 5].map((star) => (
-          <StarButton key={star} type="button" onPress={() => setRating(star)}>
-            <StarText selected={star <= rating}>⭐</StarText>
+          <StarButton
+            key={star}
+            onPress={() => setFormData((prev) => ({ ...prev, rating: star }))}
+            testID={`${testID}-star-${star}`}
+          >
+            <StarText selected={star <= formData.rating}>⭐</StarText>
           </StarButton>
         ))}
       </RatingContainer>
 
       <TextArea
         placeholder="Conte sua experiência..."
-        value={comment}
-        onChangeText={(text) => setComment(text)}
-        required
+        value={formData.comment}
+        onChangeText={(text) =>
+          setFormData((prev) => ({ ...prev, comment: text }))
+        }
+        multiline
+        numberOfLines={4}
+        testID={`${testID}-comment`}
       />
 
       {error && <ErrorMessage>{error}</ErrorMessage>}
 
       <RecommendationButtons>
-        <RecommendationButton
-          selected={recommendation === "indica"}
-          onPress={() => handleRecommendation("indica")}
-        >
-          <AnimatedContainer style={{ transform: [{ scale: indicaScale }] }}>
-            <MaterialCommunityIcons
-              name="hand-clap"
-              size={24}
-              color={recommendation === "indica" ? "#422680" : "#666"}
-            />
-            <RecommendationButtonText selected={recommendation === "indica"}>
-              Indicar
-            </RecommendationButtonText>
-          </AnimatedContainer>
-        </RecommendationButton>
-
-        <RecommendationButton
-          selected={recommendation === "nao_indica"}
-          onPress={() => handleRecommendation("nao_indica")}
-        >
-          <AnimatedContainer style={{ transform: [{ scale: naoIndicaScale }] }}>
-            <MaterialCommunityIcons
-              name="hand-pointing-down"
-              size={24}
-              color={recommendation === "nao_indica" ? "#dc3545" : "#666"}
-            />
-            <RecommendationButtonText
-              selected={recommendation === "nao_indica"}
+        {Object.entries(RECOMMENDATION_TYPES).map(([key, value]) => (
+          <RecommendationButton
+            key={value}
+            selected={formData.recommendation === value}
+            onPress={() => handleRecommendation(value)}
+            testID={`${testID}-recommendation-${value}`}
+          >
+            <AnimatedContainer
+              style={{
+                transform: [
+                  {
+                    scale:
+                      value === RECOMMENDATION_TYPES.INDICA
+                        ? indicaScale
+                        : naoIndicaScale,
+                  },
+                ],
+              }}
             >
-              Não Indicar
-            </RecommendationButtonText>
-          </AnimatedContainer>
-        </RecommendationButton>
+              <MaterialCommunityIcons
+                name={
+                  value === RECOMMENDATION_TYPES.INDICA
+                    ? "hand-clap"
+                    : "hand-pointing-down"
+                }
+                size={24}
+                color={
+                  formData.recommendation === value
+                    ? value === RECOMMENDATION_TYPES.INDICA
+                      ? "#422680"
+                      : "#dc3545"
+                    : "#666"
+                }
+              />
+              <RecommendationButtonText
+                selected={formData.recommendation === value}
+              >
+                {value === RECOMMENDATION_TYPES.INDICA
+                  ? "Indicar"
+                  : "Não Indicar"}
+              </RecommendationButtonText>
+            </AnimatedContainer>
+          </RecommendationButton>
+        ))}
       </RecommendationButtons>
 
-      <SubmitButton onPress={handleSubmit} disabled={loading}>
+      <SubmitButton
+        onPress={handleSubmit}
+        disabled={loading}
+        testID={`${testID}-submit`}
+      >
         <ButtonText>{loading ? "Enviando..." : "Enviar avaliação"}</ButtonText>
       </SubmitButton>
     </FormContainer>

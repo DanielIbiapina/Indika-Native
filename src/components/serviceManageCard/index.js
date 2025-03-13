@@ -11,28 +11,42 @@ import {
   Actions,
   ActionButton,
   Rating,
+  RatingText,
 } from "./styles";
 
-const ServiceManageCard = ({ service, onEdit, onDelete }) => {
+const ServiceManageCard = ({ service, onEdit, onDelete, testID }) => {
+  const {
+    images,
+    title,
+    category,
+    priceStartingAt,
+    priceUnit,
+    rating = 0,
+  } = service;
+
   return (
-    <Card>
-      <ServiceImage source={{ uri: service.images[0] }} />
+    <Card testID={testID}>
+      <ServiceImage source={{ uri: images[0] }} testID={`${testID}-image`} />
       <ServiceInfo>
-        <Title>{service.title}</Title>
-        <Category>{service.category}</Category>
+        <Title>{title}</Title>
+        <Category>{category}</Category>
         <Price>
-          R$ {service.priceStartingAt} / {service.priceUnit}
+          R$ {priceStartingAt} / {priceUnit}
         </Price>
         <Rating>
           <Ionicons name="star" size={16} color="#FFC107" />
-          <Text>{service.rating.toFixed(1) || 0}</Text>
+          <RatingText>{rating.toFixed(1)}</RatingText>
         </Rating>
       </ServiceInfo>
       <Actions>
-        <ActionButton onPress={() => onEdit(service)}>
+        <ActionButton onPress={() => onEdit(service)} testID={`${testID}-edit`}>
           <Ionicons name="pencil" size={16} color="#333" />
         </ActionButton>
-        <ActionButton onPress={() => onDelete(service.id)} danger>
+        <ActionButton
+          onPress={() => onDelete(service.id)}
+          danger
+          testID={`${testID}-delete`}
+        >
           <Ionicons name="trash" size={16} color="#D32F2F" />
         </ActionButton>
       </Actions>

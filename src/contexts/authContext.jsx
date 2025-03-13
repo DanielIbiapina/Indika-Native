@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post("/auth/login", { email, password });
 
-      const { user, token } = response.data.token;
+      const { user, token } = response.data;
 
       await AsyncStorage.setItem("@App:user", JSON.stringify(user));
       await AsyncStorage.setItem("@App:token", token);
@@ -55,14 +55,33 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, cpf) => {
     try {
+      console.log("Dados enviados para registro:", {
+        name,
+        email,
+        password,
+        cpf,
+      });
+
       const response = await api.post("/auth/register", {
         name,
         email,
         password,
+        cpf,
       });
+
+      console.log("Resposta completa do registro:", response.data);
+
+      // Verificando a estrutura da resposta
+      if (!response.data.user || !response.data.token) {
+        console.log("Estrutura da resposta inválida:", response.data);
+        throw new Error("Resposta do servidor inválida");
+      }
+
       const { user, token } = response.data;
+
+      console.log("Dados extraídos:", { user, token });
 
       await AsyncStorage.setItem("@App:user", JSON.stringify(user));
       await AsyncStorage.setItem("@App:token", token);
@@ -72,6 +91,9 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
+      console.error("Erro completo no registro:", error);
+      console.error("Resposta de erro:", error.response?.data);
+
       return {
         success: false,
         error: error.response?.data?.message || "Erro ao criar conta",
@@ -86,6 +108,13 @@ export const AuthProvider = ({ children }) => {
     delete api.defaults.headers.Authorization;
   };
 
+  const updateUser = (updatedUser) => {
+    setUser((prevUser) => ({
+      ...prevUser,
+      ...updatedUser,
+    }));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -95,6 +124,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        updateUser,
       }}
     >
       {!loading && children}

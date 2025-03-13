@@ -1,94 +1,66 @@
 import React, { useState, useEffect } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ActivityIndicator, FlatList, View, Text, Alert } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator, FlatList, Alert } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 import { orderService } from "../../services/orderService";
-import { reviewService } from "../../services/reviewService";
+import { ORDER_STATUS_LABELS } from "../../constants/orderStatus";
 import { useAuth } from "../../contexts/authContext";
+import OrderCard from "../../components/orderCard";
+import SearchBar from "../../components/searchBar";
+
 import {
   Container,
-  Header,
   Title,
   HeaderActions,
   FilterButton,
   FilterButtonText,
   TabsContainer,
   Tab,
-  OrdersGrid,
   LoginPrompt,
-  PromptText,
-  LoginButton,
   IllustrationWrapper,
   ErrorMessage,
   TabText,
   LoaderContainer,
+  SectionTitleText,
+  ViewAllText,
+  LoginButton,
+  LoginButtonText,
 } from "./styles";
-import OrderCard from "../../components/orderCard";
-import SearchBar from "../../components/searchBar";
 
-const STATUS_LABELS = {
-  pending: "Pendente",
-  accepted: "Aceito",
-  in_progress: "Em andamento",
-  completed: "Concluído",
-  paid: "Pago",
-  PAID: "Pago",
-  cancelled: "Cancelado",
-};
+const ACTIVE_STATUS = [
+  "WAITING_QUOTE",
+  "QUOTE_SENT",
+  "QUOTE_ACCEPTED",
+  "WAITING_PAYMENT",
+  "IN_PROGRESS",
+];
+
+const COMPLETED_STATUS = ["COMPLETED", "CANCELLED", "PAID", "QUOTE_REJECTED"];
 
 const Pedidos = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { signed: isLoggedIn, user } = useAuth();
+  const { signed: isLoggedIn } = useAuth();
+
   const [activeTab, setActiveTab] = useState("active");
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState({ active: [], completed: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [reviews, setReviews] = useState([]);
-
-  useEffect(() => {
-    const loadOrdersAndReviews = async () => {
-      if (isLoggedIn) {
-        await loadOrders();
-        try {
-          const response = await reviewService.listByUser(user.id);
-          console.log("Reviews carregadas:", response);
-          // Extraindo o array de reviews do objeto de resposta
-          setReviews(response.reviews || []);
-        } catch (error) {
-          console.error("Erro ao carregar reviews:", error);
-          setReviews([]);
-        }
-      } else {
-        setLoading(false);
-      }
-    };
-
-    loadOrdersAndReviews();
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (route.params?.status) {
-      handlePaymentStatus(route.params.status);
-    }
-  }, [route.params?.status]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const loadOrders = async () => {
     try {
       setLoading(true);
       setError(null);
+
       const data = await orderService.list();
 
-      const activeOrders = data.filter((order) =>
-        ["pending", "accepted", "in_progress"].includes(order.status)
-      );
-      const completedOrders = data.filter((order) =>
-        ["completed", "cancelled", "paid", "PAID"].includes(order.status)
-      );
-
       setOrders({
-        active: activeOrders,
-        completed: completedOrders,
+        active: data.filter((order) => ACTIVE_STATUS.includes(order.status)),
+        completed: data.filter((order) =>
+          COMPLETED_STATUS.includes(order.status)
+        ),
       });
     } catch (err) {
       setError("Erro ao carregar pedidos. Tente novamente mais tarde.");
@@ -98,20 +70,43 @@ const Pedidos = () => {
     }
   };
 
-  const handlePaymentStatus = (status) => {
-    switch (status) {
-      case "success":
-        Alert.alert("Sucesso", "Pagamento realizado com sucesso!");
-        loadOrders(); // Recarrega os pedidos
-        break;
-      case "failure":
-        Alert.alert("Erro", "Não foi possível processar o pagamento");
-        break;
-      case "pending":
-        Alert.alert("Pendente", "Seu pagamento está em processamento");
-        break;
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadOrders();
+    } else {
+      setLoading(false);
     }
-  };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (route.params?.status) {
+      const messages = {
+        success: "Pagamento realizado com sucesso!",
+        failure: "Não foi possível processar o pagamento",
+        pending: "Seu pagamento está em processamento",
+      };
+
+      Alert.alert(
+        route.params.status === "success" ? "Sucesso" : "Aviso",
+        messages[route.params.status]
+      );
+
+      if (route.params.status === "success") {
+        loadOrders();
+      }
+    }
+  }, [route.params?.status]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (isLoggedIn && (route.params?.ordersUpdated || route.params?.status)) {
+        loadOrders();
+        navigation.setParams({ ordersUpdated: false });
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, isLoggedIn, route.params]);
 
   if (!isLoggedIn) {
     return (
@@ -120,14 +115,15 @@ const Pedidos = () => {
           <IllustrationWrapper>
             <Ionicons name="person-circle" size={80} color="#422680" />
           </IllustrationWrapper>
-          <PromptText>
-            <Title>Faça login para ver seus pedidos</Title>
-            <Text>
-              Acompanhe seus serviços e mantenha contato com os prestadores
-            </Text>
-          </PromptText>
-          <LoginButton onPress={() => navigation.navigate("Entrar")}>
-            <Text>Entrar ou criar conta</Text>
+          <SectionTitleText>Faça login para ver seus pedidos</SectionTitleText>
+          <ViewAllText>
+            Acompanhe seus serviços e mantenha contato com os prestadores
+          </ViewAllText>
+          <LoginButton
+            onPress={() => navigation.navigate("Entrar")}
+            testID="login-button"
+          >
+            <LoginButtonText>Entrar ou criar conta</LoginButtonText>
           </LoginButton>
         </LoginPrompt>
       </Container>
@@ -152,31 +148,33 @@ const Pedidos = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>Seus Pedidos</Title>
-        <HeaderActions>
-          <FilterButton
-            onPress={() => {
-              /* adicionar função de filtro aqui */
-            }}
-          >
-            <Ionicons name="filter-outline" size={24} color="#666" />
-            <FilterButtonText>Filtrar</FilterButtonText>
-          </FilterButton>
-          <SearchBar placeholder="Buscar pedidos..." />
-        </HeaderActions>
-      </Header>
+      <Title>Seus Pedidos</Title>
+
+      <HeaderActions>
+        <FilterButton>
+          <Ionicons name="filter-outline" size={24} color="#422680" />
+          <FilterButtonText>Filtrar</FilterButtonText>
+        </FilterButton>
+        <SearchBar
+          placeholder="Buscar pedidos..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          testID="orders-search"
+        />
+      </HeaderActions>
 
       <TabsContainer>
         <Tab
           active={activeTab === "active"}
           onPress={() => setActiveTab("active")}
+          testID="active-tab"
         >
           <TabText active={activeTab === "active"}>Em Andamento</TabText>
         </Tab>
         <Tab
           active={activeTab === "completed"}
           onPress={() => setActiveTab("completed")}
+          testID="completed-tab"
         >
           <TabText active={activeTab === "completed"}>Concluídos</TabText>
         </Tab>
@@ -188,10 +186,11 @@ const Pedidos = () => {
         renderItem={({ item }) => (
           <OrderCard
             order={item}
-            statusLabels={STATUS_LABELS}
-            onStatusUpdate={loadOrders}
-            isOrderPage={true}
-            reviews={reviews}
+            statusLabels={ORDER_STATUS_LABELS}
+            onPress={() =>
+              navigation.navigate("PedidoDetalhes", { orderId: item.id })
+            }
+            showOrderDetails={false}
           />
         )}
         ListEmptyComponent={
@@ -201,6 +200,7 @@ const Pedidos = () => {
           </ErrorMessage>
         }
         contentContainerStyle={{ paddingBottom: 60 }}
+        testID="orders-list"
       />
     </Container>
   );

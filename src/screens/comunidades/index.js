@@ -1,32 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, ActivityIndicator, Dimensions } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  Dimensions,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
 import SearchBar from "../../components/searchBar";
 import CommunityCard from "../../components/communityCard";
-import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/authContext";
 import { communityService } from "../../services/communityService";
 import {
   Container,
-  Header,
   Title,
   Section,
   SectionTitle,
+  SectionTitleText,
+  ViewAllText,
   AddButton,
+  AddButtonText,
   LoginPrompt,
   LoginButton,
   LoginButtonText,
   ErrorMessage,
   AddButtonContainer,
   LoaderContainer,
+  EmptyMessage,
+  CommunityList,
 } from "./styles";
 
 const { width: viewportWidth } = Dimensions.get("window");
@@ -41,6 +38,7 @@ const Comunidades = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadCommunities();
@@ -51,17 +49,17 @@ const Comunidades = () => {
       setLoading(true);
       setError(null);
 
-      const data = await communityService.list();
-
-      let userComms = [];
-      if (isLoggedIn) {
-        userComms = await communityService.getUserCommunities();
-      }
+      const [allCommunities, userComms] = await Promise.all([
+        communityService.list(),
+        isLoggedIn
+          ? communityService.getUserCommunities()
+          : { communities: [] },
+      ]);
 
       setCommunities({
-        public: data.filter((comm) => !comm.isPrivate),
-        private: data.filter((comm) => comm.isPrivate),
-        userCommunities: userComms.communities,
+        public: allCommunities.filter((comm) => !comm.isPrivate),
+        private: allCommunities.filter((comm) => comm.isPrivate),
+        userCommunities: userComms.communities || [],
       });
     } catch (err) {
       setError("Erro ao carregar comunidades");
@@ -71,30 +69,9 @@ const Comunidades = () => {
     }
   };
 
-  const renderItem = ({ item }) => <CommunityCard {...item} />;
-
-  const renderHorizontalList = (data, title, subtitle) => {
-    if (!data || data.length === 0) return null;
-
-    return (
-      <Section>
-        <SectionTitle>
-          <Text>{title}</Text>
-          <Text>{subtitle}</Text>
-        </SectionTitle>
-        <FlatList
-          data={data}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          snapToInterval={viewportWidth * 0.85}
-          decelerationRate="fast"
-          snapToAlignment="center"
-        />
-      </Section>
-    );
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    // TODO: Implementar lógica de busca
   };
 
   const handleCreateCommunity = () => {
@@ -105,22 +82,41 @@ const Comunidades = () => {
     navigation.navigate("Entrar");
   };
 
+  const renderCommunityItem = ({ item }) => (
+    <CommunityCard {...item} testID={`community-${item.id}`} />
+  );
+
+  const renderCommunitySection = (data, title, subtitle) => {
+    if (!data?.length) return null;
+
+    return (
+      <Section>
+        <SectionTitle>
+          <SectionTitleText>{title}</SectionTitleText>
+          <ViewAllText>{subtitle}</ViewAllText>
+        </SectionTitle>
+        <CommunityList
+          data={data}
+          renderItem={renderCommunityItem}
+          keyExtractor={(item) => item.id.toString()}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 5 }}
+          snapToInterval={viewportWidth * 0.85}
+          decelerationRate="fast"
+          snapToAlignment="center"
+          testID={`community-list-${title}`}
+        />
+      </Section>
+    );
+  };
+
   if (loading) {
     return (
       <LoaderContainer>
         <ActivityIndicator size="large" color="#422680" />
       </LoaderContainer>
     );
-  }
-
-  if (communities.userCommunities !== undefined) {
-    if (isLoggedIn && communities.userCommunities.length === 0) {
-      return (
-        <Container>
-          <Text>Você ainda não participa de nenhuma comunidade</Text>
-        </Container>
-      );
-    }
   }
 
   if (error) {
@@ -134,7 +130,12 @@ const Comunidades = () => {
   return (
     <Container>
       <Title>Suas Comunidades</Title>
-      <SearchBar placeholder="Buscar comunidades..." />
+      <SearchBar
+        placeholder="Buscar comunidades..."
+        value={searchQuery}
+        onChangeText={handleSearch}
+        testID="community-search"
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -142,28 +143,53 @@ const Comunidades = () => {
       >
         {isLoggedIn && (
           <AddButtonContainer>
-            <AddButton onPress={handleCreateCommunity}>
-              <Ionicons name="add" size={24} color="black" />
-              <Text>Criar nova comunidade</Text>
+            <AddButton
+              onPress={handleCreateCommunity}
+              testID="create-community-button"
+            >
+              <Ionicons name="add" size={24} color="#422680" />
+              <AddButtonText>Criar nova comunidade</AddButtonText>
             </AddButton>
           </AddButtonContainer>
         )}
 
         {isLoggedIn &&
-          renderHorizontalList(
-            communities.userCommunities,
-            "Minhas Comunidades",
-            "Ver todas"
-          )}
+          (communities.userCommunities?.length === 0 ? (
+            <Section>
+              <SectionTitle>
+                <SectionTitleText>Minhas Comunidades</SectionTitleText>
+              </SectionTitle>
+              <EmptyMessage>
+                <Ionicons
+                  name="people-outline"
+                  size={48}
+                  color="#422680"
+                  style={{ marginBottom: 16 }}
+                />
+                <SectionTitleText
+                  style={{ textAlign: "center", marginBottom: 8 }}
+                >
+                  Você ainda não participa de nenhuma comunidade
+                </SectionTitleText>
+                <ViewAllText>Explore as comunidades disponíveis</ViewAllText>
+              </EmptyMessage>
+            </Section>
+          ) : (
+            renderCommunitySection(
+              communities.userCommunities,
+              "Minhas Comunidades",
+              "Ver todas"
+            )
+          ))}
 
-        {renderHorizontalList(
+        {renderCommunitySection(
           communities.public,
           "Comunidades populares",
           "Ver todas"
         )}
 
         {isLoggedIn &&
-          renderHorizontalList(
+          renderCommunitySection(
             communities.private,
             "Suas comunidades",
             "Ver todas"
@@ -171,10 +197,10 @@ const Comunidades = () => {
 
         {!isLoggedIn && (
           <LoginPrompt>
-            <Text>
+            <SectionTitleText>
               Entre para ver mais comunidades e criar as suas próprias
-            </Text>
-            <LoginButton onPress={handleLogin}>
+            </SectionTitleText>
+            <LoginButton onPress={handleLogin} testID="login-button">
               <LoginButtonText>Entrar</LoginButtonText>
             </LoginButton>
           </LoginPrompt>
@@ -183,12 +209,5 @@ const Comunidades = () => {
     </Container>
   );
 };
-
-const styles = StyleSheet.create({
-  listContent: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-});
 
 export default Comunidades;

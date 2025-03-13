@@ -58,7 +58,7 @@ const CentralAjuda = () => {
   );
 
   const handleContactWhatsApp = () => {
-    Linking.openURL("https://wa.me/5511999999999"); // Substitua pelo número correto
+    Linking.openURL("https://wa.me/5585999663365"); // Substitua pelo número correto
   };
 
   const handleContactEmail = () => {

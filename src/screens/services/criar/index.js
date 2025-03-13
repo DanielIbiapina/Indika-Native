@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigation } from "@react-navigation/native";
-import { TextInput, Text, View, Button, Picker, Platform } from "react-native";
 import { serviceService } from "../../../services/serviceService";
 import ImageUpload from "../../../components/imageUpload";
 import {
@@ -13,7 +12,10 @@ import {
   CategorySelect,
   ErrorMessage,
   ButtonStyled,
+  ButtonStyledText,
+  ScrollContainer,
 } from "./styles";
+import { Picker } from "@react-native-picker/picker";
 
 const CriarServico = () => {
   const navigation = useNavigation();
@@ -41,10 +43,10 @@ const CriarServico = () => {
       "https://plus.unsplash.com/premium_photo-1713908832340-e733093a869e?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDV8fGF1bGElMjBkZSUyMHlvZ2F8ZW58MHx8MHx8fDA%3D",
   };
 
-  const handleChange = (e, name) => {
+  const handleChange = (name, value) => {
     setFormData((prev) => ({
       ...prev,
-      [name]: e,
+      [name]: value,
     }));
   };
 
@@ -61,26 +63,28 @@ const CriarServico = () => {
 
     try {
       const formDataToSend = new FormData();
+
+      // Adiciona a imagem se houver uma nova
+      if (formData.image?.uri) {
+        formDataToSend.append("image", {
+          uri: formData.image.uri,
+          type: formData.image.type || "image/jpeg",
+          name: formData.image.fileName || "service-image.jpg",
+        });
+      }
+
+      // Adiciona os outros dados do serviço
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("category", formData.category);
       formDataToSend.append("priceStartingAt", formData.priceStartingAt);
       formDataToSend.append("priceUnit", formData.priceUnit);
 
-      if (formData.image?.file) {
-        formDataToSend.append("images", formData.image.file);
-      } else if (formData.category && DEFAULT_IMAGES[formData.category]) {
-        const defaultImage = DEFAULT_IMAGES[formData.category];
-        formDataToSend.append("defaultImage", defaultImage);
-      } else {
-        const defaultImage =
-          "https://plus.unsplash.com/premium_photo-1680303134459-912abf8efe2f?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8JTNGfGVufDB8fDB8fHww";
-        formDataToSend.append("defaultImage", defaultImage);
-      }
-
-      await serviceService.create(formDataToSend);
-      navigation.navigate("Perfil");
+      const response = await serviceService.create(formDataToSend);
+      // Navega para a página de detalhes do serviço recém-criado
+      navigation.replace("ServicoDetalhes", { id: response.id });
     } catch (err) {
+      console.error("Erro ao criar:", err);
       setError(err.message || "Erro ao criar serviço");
     } finally {
       setLoading(false);
@@ -89,73 +93,80 @@ const CriarServico = () => {
 
   return (
     <Container>
-      <Title>Criar Novo Serviço</Title>
+      <ScrollContainer>
+        <Title>Criar Novo Serviço</Title>
 
-      <Form>
-        <ImageUpload
-          value={formData.image}
-          onChange={handleImageChange}
-          maxSize={2} // 2MB
-          label="Foto de capa do serviço"
-        />
-
-        <Input
-          placeholder="Título do serviço"
-          value={formData.title}
-          onChangeText={(text) => handleChange(text, "title")}
-          required
-        />
-
-        <TextArea
-          placeholder="Descreva seu serviço em detalhes..."
-          value={formData.description}
-          onChangeText={(text) => handleChange(text, "description")}
-          required
-        />
-
-        <CategorySelect
-          selectedValue={formData.category}
-          onValueChange={(itemValue) => handleChange(itemValue, "category")}
-        >
-          <Picker.Item label="Selecione uma categoria" value="" />
-          <Picker.Item
-            label="Assistência Técnica"
-            value="Assistência Técnica"
+        <Form>
+          <ImageUpload
+            value={formData.image}
+            onChange={handleImageChange}
+            maxSize={2} // 2MB
+            label="Foto de capa do serviço"
           />
-          <Picker.Item label="Reformas e Reparos" value="Reformas e Reparos" />
-          <Picker.Item label="Eventos" value="Eventos" />
-          <Picker.Item
-            label="Serviços Domésticos"
-            value="Serviços Domésticos"
-          />
-          <Picker.Item label="Aulas" value="Aulas" />
-        </CategorySelect>
 
-        <PriceInput>
           <Input
-            placeholder="Preço inicial"
-            value={formData.priceStartingAt}
-            onChangeText={(text) => handleChange(text, "priceStartingAt")}
+            placeholder="Título do serviço"
+            value={formData.title}
+            onChangeText={(text) => handleChange("title", text)}
             required
           />
-          <Picker
-            selectedValue={formData.priceUnit}
-            onValueChange={(itemValue) => handleChange(itemValue, "priceUnit")}
+
+          <TextArea
+            placeholder="Descreva seu serviço em detalhes..."
+            value={formData.description}
+            onChangeText={(text) => handleChange("description", text)}
+            required
+          />
+
+          <CategorySelect
+            selectedValue={formData.category}
+            onValueChange={(itemValue) => handleChange("category", itemValue)}
           >
-            <Picker.Item label="por serviço" value="servico" />
-            <Picker.Item label="por hora" value="hora" />
-            <Picker.Item label="por pessoa" value="pessoa" />
-          </Picker>
-        </PriceInput>
+            <Picker.Item label="Selecione uma categoria" value="" />
+            <Picker.Item
+              label="Assistência Técnica"
+              value="Assistência Técnica"
+            />
+            <Picker.Item
+              label="Reformas e Reparos"
+              value="Reformas e Reparos"
+            />
+            <Picker.Item label="Eventos" value="Eventos" />
+            <Picker.Item
+              label="Serviços Domésticos"
+              value="Serviços Domésticos"
+            />
+            <Picker.Item label="Aulas" value="Aulas" />
+          </CategorySelect>
 
-        {error && <ErrorMessage>{error}</ErrorMessage>}
+          <PriceInput>
+            <Input
+              placeholder="Preço inicial"
+              value={formData.priceStartingAt}
+              onChangeText={(text) => handleChange("priceStartingAt", text)}
+              required
+            />
+            <Picker
+              selectedValue={formData.priceUnit}
+              onValueChange={(itemValue) =>
+                handleChange("priceUnit", itemValue)
+              }
+            >
+              <Picker.Item label="por serviço" value="servico" />
+              <Picker.Item label="por hora" value="hora" />
+              <Picker.Item label="por pessoa" value="pessoa" />
+            </Picker>
+          </PriceInput>
 
-        <ButtonStyled
-          title={loading ? "Criando..." : "Criar Serviço"}
-          onPress={handleSubmit}
-          disabled={loading}
-        />
-      </Form>
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+
+          <ButtonStyled onPress={handleSubmit} disabled={loading}>
+            <ButtonStyledText>
+              {loading ? "Criando..." : "Criar Serviço"}
+            </ButtonStyledText>
+          </ButtonStyled>
+        </Form>
+      </ScrollContainer>
     </Container>
   );
 };

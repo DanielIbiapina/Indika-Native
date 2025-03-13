@@ -1,34 +1,20 @@
 import styled from "styled-components/native";
 
 export const Container = styled.View`
-  padding: 16px;
   flex: 1;
-  background-color: #f5f5f5;
-`;
-
-export const Header = styled.View`
   padding: 16px;
-
-  elevation: 2;
-`;
-
-export const LoaderContainer = styled.View`
-  flex: 1;
-  justify-content: center;
-  align-items: center;
   background-color: #f5f5f5;
 `;
 
 export const Title = styled.Text`
   font-size: 24px;
   font-weight: 600;
-  color: #333;
+  color: ${({ theme }) => theme.colors.text.primary};
   margin-vertical: 16px;
 `;
 
 export const Section = styled.View`
-  margin-vertical: 16px;
-  //padding-horizontal: 16px;
+  margin-bottom: 16px;
 `;
 
 export const SectionTitle = styled.View`
@@ -38,56 +24,90 @@ export const SectionTitle = styled.View`
   margin-bottom: 12px;
 `;
 
+export const SectionTitleText = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+export const ViewAllText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.primary};
+`;
+
 export const AddButtonContainer = styled.View`
-  //padding-horizontal: 16px;
+  margin-bottom: 24px;
 `;
 
 export const AddButton = styled.TouchableOpacity`
-  width: 100%;
-  background-color: #fff;
-  border: 1px dashed ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  padding: 16px;
-  font-size: 14px;
-  font-weight: 500;
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  margin: 16px 0 32px;
+  background-color: white;
+  padding: 16px;
+  border-radius: 12px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+`;
+
+export const AddButtonText = styled(SectionTitleText)`
+  margin-left: 12px;
+  font-size: 16px;
 `;
 
 export const LoginPrompt = styled.View`
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 24px;
-  margin-top: 32px;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  margin-top: 24px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
 `;
 
 export const LoginButton = styled.TouchableOpacity`
   background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 8px;
-  padding: 12px 24px;
-  align-items: center;
-  justify-content: center;
+  padding: 12px 32px;
+  border-radius: 24px;
+  margin-top: 16px;
+  elevation: 2;
 `;
 
 export const LoginButtonText = styled.Text`
   color: white;
-  font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 16px;
 `;
 
 export const ErrorMessage = styled.Text`
+  color: ${({ theme }) => theme.colors.error};
   text-align: center;
-  color: #dc3545;
-  padding: 20px;
-  margin: 20px 0;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-top: 24px;
+  font-size: 16px;
+`;
+
+export const LoaderContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const EmptyMessage = styled.View`
+  align-items: center;
+  padding: 24px;
+  background-color: white;
+  border-radius: 12px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+  margin: 8px 0;
+`;
+
+export const CommunityList = styled.FlatList`
+  margin: 0 -16px;
+  padding: 0 16px;
 `;

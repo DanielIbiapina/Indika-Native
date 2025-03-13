@@ -5,26 +5,13 @@ export const Container = styled.View`
   background-color: #f5f5f5;
 `;
 
-export const Header = styled.View`
-  padding: 16px;
-  padding-top: 40px;
-  background-color: #fff;
-  border-bottom-width: 1px;
-  border-bottom-color: ${({ theme }) => theme.colors.border};
-`;
-
-export const Title = styled.Text`
-  font-size: 24px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text.primary};
-  margin-bottom: 8px;
-`;
-
 export const FilterContainer = styled.View`
   flex-direction: row;
   gap: 8px;
-  margin-bottom: 16px;
-  padding-horizontal: 16px;
+  padding: 16px;
+  background-color: #fff;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 
 export const FilterButton = styled.TouchableOpacity`

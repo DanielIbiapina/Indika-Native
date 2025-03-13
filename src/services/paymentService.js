@@ -1,74 +1,124 @@
 import api from "./api";
 
+export const PAYMENT_STATUS = {
+  PENDING: "PENDING",
+  COMPLETED: "COMPLETED",
+  FAILED: "FAILED",
+  CANCELLED: "CANCELLED",
+  REFUNDED: "REFUNDED",
+};
+
 export const paymentService = {
+  // Criar preferência de pagamento no Mercado Pago
   createMercadoPagoPreference: async (data) => {
     try {
+      // Validar dados obrigatórios
+      if (
+        !data.orderId ||
+        !data.amount ||
+        !data.description ||
+        !data.providerId
+      ) {
+        throw new Error("Dados incompletos: todos os campos são obrigatórios");
+      }
+
       const response = await api.post("/payments/mercadopago/preference", {
         orderId: data.orderId,
-        amount: data.amount,
+        amount: Number(data.amount),
         description: data.description,
         providerId: data.providerId,
       });
 
-      if (!response.data.init_point) {
-        throw new Error("URL do checkout não encontrada na resposta");
-      }
-
       return response;
     } catch (error) {
-      console.error("Erro detalhado ao criar preferência:", {
+      console.error("Erro ao criar preferência:", {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        statusText: error.response?.statusText,
-        url: error.config?.url,
-        method: error.config?.method,
-        data: error.config?.data,
+        data: data, // Log dos dados enviados
       });
 
-      if (error.response) {
-        // Erro com resposta do servidor
-        throw new Error(
-          `Erro do servidor: ${error.response.status} - ${
-            error.response.data.message || error.response.statusText
-          }`
-        );
-      } else if (error.request) {
-        // Erro sem resposta do servidor
-        throw new Error(
-          "Não foi possível conectar ao servidor. Verifique sua conexão."
-        );
-      } else {
-        // Erro na configuração da requisição
-        throw new Error(`Erro ao criar preferência: ${error.message}`);
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || "Dados incompletos");
       }
+      throw error;
     }
   },
 
-  // Métodos para histórico e status
+  // Buscar histórico de pagamentos
   getPaymentHistory: async () => {
-    return api.get("/payments/history");
+    try {
+      const response = await api.get("/payments/history");
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao buscar histórico:", error);
+      throw new Error("Não foi possível carregar o histórico de pagamentos");
+    }
   },
 
+  // Buscar status de um pagamento específico
   getPaymentStatus: async (orderId) => {
     try {
       const response = await api.get(`/payments/status/${orderId}`);
       return response.data;
     } catch (error) {
-      console.error("Erro ao buscar status do pagamento:", error);
-      throw error;
+      console.error("Erro ao buscar status:", error);
+      throw new Error("Não foi possível verificar o status do pagamento");
     }
   },
 
+  // Monitorar status do pagamento
+  monitorPaymentStatus: async (orderId, onStatusChange) => {
+    let attempts = 0;
+    const maxAttempts = 10;
+    const interval = 3000; // 3 segundos
+
+    const checkStatus = async () => {
+      try {
+        const status = await paymentService.getPaymentStatus(orderId);
+
+        if (status.paymentStatus === PAYMENT_STATUS.COMPLETED) {
+          onStatusChange(status);
+          return true;
+        }
+
+        if (
+          status.paymentStatus === PAYMENT_STATUS.FAILED ||
+          status.paymentStatus === PAYMENT_STATUS.CANCELLED
+        ) {
+          onStatusChange(status);
+          return true;
+        }
+
+        return false;
+      } catch (error) {
+        console.error("Erro ao monitorar status:", error);
+        return false;
+      }
+    };
+
+    return new Promise((resolve) => {
+      const intervalId = setInterval(async () => {
+        attempts++;
+
+        const shouldStop = await checkStatus();
+        if (shouldStop || attempts >= maxAttempts) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, interval);
+    });
+  },
+
   // Métodos para prestadores de serviço
-  createPaymentRequest: async (data) => {
+  /* createPaymentRequest: async (data) => {
     return api.post("/payments/request", {
       orderId: data.orderId,
       amount: data.amount,
       providerId: data.receiverId,
       clientId: data.senderId,
     });
-  },
+  },*/
 
   /* // Métodos administrativos
   getAdminPayments: async () => {

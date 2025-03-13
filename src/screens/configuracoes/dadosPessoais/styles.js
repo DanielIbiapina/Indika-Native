@@ -10,11 +10,14 @@ export const Form = styled.View`
   padding: 16px;
 `;
 
+export const FieldContainer = styled.View`
+  margin-bottom: 16px;
+`;
+
 export const Label = styled.Text`
   font-size: 14px;
   color: #666;
   margin-bottom: 4px;
-  margin-top: 16px;
 `;
 
 export const Input = styled.TextInput`
@@ -22,8 +25,15 @@ export const Input = styled.TextInput`
   padding: 12px;
   border-radius: 8px;
   border-width: 1px;
-  border-color: #ddd;
+  border-color: ${(props) => (props.error ? props.theme.colors.error : "#ddd")};
   font-size: 16px;
+  color: ${(props) => props.theme.colors.text.primary};
+`;
+
+export const ErrorText = styled.Text`
+  color: ${(props) => props.theme.colors.error};
+  font-size: 12px;
+  margin-top: 4px;
 `;
 
 export const SaveButton = styled.TouchableOpacity`
@@ -31,7 +41,7 @@ export const SaveButton = styled.TouchableOpacity`
   padding: 16px;
   border-radius: 8px;
   align-items: center;
-  margin-top: 32px;
+  margin-top: 16px;
   opacity: ${(props) => (props.disabled ? 0.7 : 1)};
 `;
 

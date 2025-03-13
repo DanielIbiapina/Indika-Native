@@ -53,7 +53,6 @@ const ComunidadeDetalhes = () => {
       setLoading(true);
       const data = await communityService.getById(id);
       setCommunity(data);
-      console.log(data);
 
       if (user) {
         setIsMember(data.members.some((member) => member.id === user.id));

@@ -87,23 +87,47 @@ export const SocialButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
+  padding: 14px;
   border-radius: 8px;
-  background-color: white;
-  color: #333;
-  font-size: 14px;
   margin-top: 8px;
+  elevation: 1;
+  background-color: ${({ provider }) =>
+    provider === "google"
+      ? "#ffffff"
+      : provider === "facebook"
+      ? "#1877F2"
+      : "#ffffff"};
 `;
 
-export const Divider = styled.Text`
-  text-align: center;
-  position: relative;
+export const SocialButtonText = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ provider }) =>
+    provider === "google"
+      ? "#333333"
+      : provider === "facebook"
+      ? "#ffffff"
+      : "#333333"};
+`;
+
+export const Divider = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin: 24px 0 16px;
+`;
+
+export const DividerLine = styled.View`
+  flex: 1;
+  height: 1px;
+  background-color: #ddd;
+`;
+
+export const DividerText = styled.Text`
   color: #666;
   font-size: 14px;
-  margin: 8px 0;
+  margin: 0 16px;
 `;
 
 export const ToggleText = styled.Text`

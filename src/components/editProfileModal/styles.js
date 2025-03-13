@@ -13,6 +13,11 @@ export const ModalContent = styled.View`
   padding: 24px;
   width: 90%;
   max-height: 90%;
+  elevation: 4;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
 `;
 
 export const ModalHeader = styled.View`
@@ -29,9 +34,10 @@ export const Form = styled.View`
 export const Input = styled.TextInput`
   width: 100%;
   padding: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 8px;
   font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.primary};
 `;
 
 export const Button = styled.TouchableOpacity`

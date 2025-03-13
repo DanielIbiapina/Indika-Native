@@ -7,7 +7,7 @@ import { theme } from "./styles/theme";
 import AppNavigator from "./navigation/appNavigator"; // Importe o AppNavigator que você criou
 import { StatusBar } from "expo-status-bar"; // Importar o StatusBar do Expo
 import { STRIPE_CONFIG } from "./config/stripe.config";
-
+import { OrderProvider } from "./contexts/orderContext";
 
 export default function App() {
   return (
@@ -17,8 +17,10 @@ export default function App() {
     >
       <ThemeProvider theme={theme}>
         <AuthProvider>
-          <AppNavigator />
-          <StatusBar style="auto" />
+          <OrderProvider>
+            <AppNavigator />
+            <StatusBar style="auto" />
+          </OrderProvider>
         </AuthProvider>
       </ThemeProvider>
     </StripeProvider>

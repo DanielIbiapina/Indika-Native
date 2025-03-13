@@ -1,72 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
+import React from "react";
+import { View } from "react-native";
 import { useAuth } from "../../contexts/authContext";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+import StarRating from "../starRating";
+import { ORDER_STATUS_LABELS } from "../../constants/orderStatus";
+import { paymentService } from "../../services/paymentService";
 import {
-  Card,
+  Container,
   ServiceInfo,
   ServiceImage,
   ServiceDetails,
+  ServiceTitle,
+  ProviderName,
   StatusBadge,
+  StatusText,
+  DateText,
   Price,
-  ActionsContainer,
+  ButtonsContainer,
   ActionButton,
+  ButtonText,
+  ActionsContainer,
   RateButton,
+  OrderDetailsButton,
+  OrderDetailsText,
 } from "./styles";
-import StarRating from "../starRating";
-import { paymentService } from "../../services/paymentService";
 
 const OrderCard = ({
   order,
-  statusLabels,
   onStatusUpdate,
   isOrderPage,
   reviews = [],
+  onPress,
+  showOrderDetails,
 }) => {
   const { user } = useAuth();
   const navigation = useNavigation();
   const isProvider = user?.id === order.providerId;
-  const [paymentStatus, setPaymentStatus] = useState(null);
 
-  useEffect(() => {
-    console.log(isOrderPage);
-
-    const loadPaymentStatus = async () => {
-      try {
-        if (order.status === "completed") {
-          const response = await paymentService.getPaymentStatus(order.id);
-
-          setPaymentStatus(response.paymentStatus);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar status do pagamento:", error);
-      }
-    };
-
-    loadPaymentStatus();
-  }, [order.id, order.status]);
-
-  const handleRateOrder = () => {
-    navigation.navigate("ServicoDetalhes", { id: order.service.id });
-  };
-
-  const handlePaymentRequest = async () => {
+  const formatDate = (date) => {
     try {
-      await paymentService.createPaymentRequest({
-        orderId: order.id,
-        amount: order.price,
-        receiverId: order.providerId,
-        senderId: order.clientId,
-      });
-
-      Alert.alert("Sucesso", "Solicitação de pagamento enviada ao cliente");
+      return format(new Date(date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     } catch (error) {
-      console.error("Erro detalhado:", error);
-      Alert.alert(
-        "Erro",
-        error.response?.data?.message ||
-          "Erro ao solicitar pagamento. Por favor, tente novamente."
-      );
+      return "Data não definida";
     }
   };
 
@@ -79,92 +58,107 @@ const OrderCard = ({
     });
   };
 
-  const userReview = Array.isArray(reviews)
-    ? reviews.find((r) => r.orderId === order.id && r.reviewerId === user?.id)
-    : null;
+  const handleViewDetails = () => {
+    navigation.navigate("PedidoDetalhes", { orderId: order.id });
+  };
+
+  const handleOpenChat = () => {
+    navigation.navigate("Mensagens", {
+      providerId: order.providerId,
+      orderId: order.id,
+    });
+  };
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+      return;
+    }
+    handleViewDetails();
+  };
+
+  const userReview = reviews.find(
+    (r) => r.orderId === order.id && r.reviewerId === user?.id
+  );
 
   return (
-    <Card>
+    <Container onPress={handlePress} testID={`order-card-${order.id}`}>
       <ServiceInfo>
-        <ServiceImage source={{ uri: order.service.images[0] }} />
+        <ServiceImage
+          source={{ uri: order.service.images[0] }}
+          testID={`order-image-${order.id}`}
+        />
         <ServiceDetails>
-          <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 4 }}>
-            {order.service.title}
-          </Text>
-          <Text style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
-            {order.provider.name}
-          </Text>
+          <ServiceTitle>{order.service.title}</ServiceTitle>
+          <ProviderName>{order.provider.name}</ProviderName>
           <StatusBadge status={order.status}>
-            <Text style={{ fontSize: 12, fontWeight: "500" }}>
-              {statusLabels[order.status]}
-            </Text>
+            <StatusText status={order.status}>
+              {ORDER_STATUS_LABELS[order.status]}
+            </StatusText>
           </StatusBadge>
         </ServiceDetails>
       </ServiceInfo>
-      <Price>R$ {Number(order.price).toFixed(2)}</Price>
-      {order.description && <Text>{order.description}</Text>}
+
+      <DateText>{formatDate(order.scheduledDate)}</DateText>
+
+      {order.price && <Price>R$ {Number(order.price).toFixed(2)}</Price>}
+
+      <ButtonsContainer>
+        <ActionButton
+          onPress={handleViewDetails}
+          variant="secondary"
+          testID={`view-details-${order.id}`}
+        >
+          <ButtonText variant="secondary">Ver Detalhes</ButtonText>
+        </ActionButton>
+
+        <ActionButton onPress={handleOpenChat} testID={`open-chat-${order.id}`}>
+          <ButtonText>Abrir Chat</ButtonText>
+        </ActionButton>
+      </ButtonsContainer>
+
       {isProvider && order.status === "pending" && (
         <ActionsContainer>
           <ActionButton
             onPress={() => onStatusUpdate(order.id, "accepted")}
-            variant="primary"
+            testID={`accept-order-${order.id}`}
           >
-            <Text style={{ color: "white" }}>Aceitar</Text>
+            <ButtonText>Aceitar</ButtonText>
           </ActionButton>
           <ActionButton
             onPress={() => onStatusUpdate(order.id, "cancelled")}
             variant="secondary"
+            testID={`reject-order-${order.id}`}
           >
-            <Text style={{ color: "#dc3545" }}>Recusar</Text>
+            <ButtonText variant="secondary">Recusar</ButtonText>
           </ActionButton>
         </ActionsContainer>
       )}
+
       {isProvider && order.status === "accepted" && (
         <ActionsContainer>
-          <ActionButton
-            onPress={() => onStatusUpdate(order.id, "in_progress")}
-            variant="primary"
-          >
-            <Text style={{ color: "white" }}>Iniciar</Text>
+          <ActionButton onPress={() => onStatusUpdate(order.id, "in_progress")}>
+            <ButtonText>Iniciar</ButtonText>
           </ActionButton>
         </ActionsContainer>
       )}
+
       {isProvider && order.status === "in_progress" && (
         <ActionsContainer>
-          <ActionButton
-            onPress={() => onStatusUpdate(order.id, "completed")}
-            variant="primary"
-          >
-            <Text style={{ color: "white" }}>Concluir</Text>
+          <ActionButton onPress={() => onStatusUpdate(order.id, "completed")}>
+            <ButtonText>Concluir</ButtonText>
           </ActionButton>
         </ActionsContainer>
       )}
-      {/* Botão de solicitar pagamento (prestador) */}
-      {/*
-      isProvider &&
-        order.status === "completed" &&
-        (!paymentStatus || paymentStatus === "CANCELLED") && (
-          <ActionsContainer>
-            <ActionButton onPress={handlePaymentRequest} variant="primary">
-              <Text style={{ color: "white" }}>Solicitar Pagamento</Text>
-            </ActionButton>
-          </ActionsContainer>
-        )
-      */}
-      {/* Botão de realizar pagamento (cliente) */}
-      {console.log(paymentStatus)}
-      {!isProvider &&
-        order.status === "completed" &&
-        (!paymentStatus || paymentStatus === "CANCELLED") && (
-          <ActionsContainer>
-            <ActionButton onPress={handlePayment} variant="primary">
-              <Text style={{ color: "white" }}>Realizar Pagamento</Text>
-            </ActionButton>
-          </ActionsContainer>
-        )}
-      {console.log(
-        (order.status === "completed" || order.status === "PAID") && isOrderPage
+
+      {!isProvider && order.status === "completed" && (
+        <ActionsContainer>
+          <ActionButton onPress={handlePayment}>
+            <ButtonText>Realizar Pagamento</ButtonText>
+          </ActionButton>
+        </ActionsContainer>
       )}
+
       {(order.status === "completed" || order.status === "PAID") &&
         isOrderPage && (
           <>
@@ -173,14 +167,29 @@ const OrderCard = ({
                 <StarRating rating={userReview.rating} />
               </View>
             ) : (
-              <RateButton onPress={handleRateOrder}>
-                <Text style={{ color: "white", marginRight: 8 }}>⭐</Text>
-                <Text style={{ color: "white" }}>Avaliar Pedido</Text>
+              <RateButton
+                onPress={() =>
+                  navigation.navigate("ServicoDetalhes", {
+                    id: order.service.id,
+                  })
+                }
+              >
+                <ButtonText>⭐ Avaliar Pedido</ButtonText>
               </RateButton>
             )}
           </>
         )}
-    </Card>
+
+      {showOrderDetails && (
+        <OrderDetailsButton
+          onPress={handleViewDetails}
+          testID={`order-details-${order.id}`}
+        >
+          <Ionicons name="document-text-outline" size={20} color="#422680" />
+          <OrderDetailsText>Ver Detalhes do Pedido</OrderDetailsText>
+        </OrderDetailsButton>
+      )}
+    </Container>
   );
 };
 

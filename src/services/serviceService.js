@@ -11,6 +11,7 @@ export const serviceService = {
         minPrice,
         maxPrice,
         orderBy = "createdAt",
+        profileId,
       } = params;
 
       const queryParams = {
@@ -25,6 +26,7 @@ export const serviceService = {
       if (category) queryParams.category = category;
       if (minPrice) queryParams.minPrice = String(minPrice);
       if (maxPrice) queryParams.maxPrice = String(maxPrice);
+      if (profileId) queryParams.profileId = profileId;
 
       const queryString = Object.keys(queryParams)
         .map(
@@ -34,8 +36,10 @@ export const serviceService = {
         .join("&");
 
       const response = await api.get(`/services?${queryString}`);
+
       return response.data;
     } catch (error) {
+      console.error("Erro detalhado:", error.response?.data || error);
       throw handleError(error, "Erro ao listar serviços");
     }
   },

@@ -1,20 +1,25 @@
 import React from "react";
 import { Card, Icon, Title } from "./styles";
-import { useNavigation } from "@react-navigation/native"; // React Navigation em vez de useNavigate
+import { useNavigation } from "@react-navigation/native";
 
-const ServiceCard = ({ icon, title }) => {
+const ServiceCard = ({ icon, title, onPress, disabled = false, testID }) => {
   const navigation = useNavigation();
 
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+      return;
+    }
+
+    navigation.navigate("ServicosPorCategoria", {
+      category: title,
+    });
+  };
+
   return (
-    <Card
-      onPress={() =>
-        navigation.navigate("ServicosPorCategoria", {
-          category: title,
-        })
-      }
-    >
+    <Card onPress={handlePress} disabled={disabled} testID={testID}>
       <Icon>{icon}</Icon>
-      <Title>{title}</Title>
+      <Title numberOfLines={2}>{title}</Title>
     </Card>
   );
 };

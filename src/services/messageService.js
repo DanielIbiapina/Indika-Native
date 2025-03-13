@@ -14,13 +14,37 @@ export const messageService = {
   },
 
   // Envia uma nova mensagem
-  sendMessage: async (chatId, content) => {
+  sendMessage: async (chatId, message) => {
     try {
+      // Se for uma mensagem de orçamento
+      if (message.type === "quotation") {
+        // Garantir que o content seja uma string
+        const content =
+          typeof message.content === "string"
+            ? message.content
+            : JSON.stringify(message.content);
+
+        const response = await api.post(`/chats/${chatId}/messages`, {
+          type: "quotation",
+          content,
+        });
+        return response.data;
+      }
+
+      // Se for uma mensagem de texto
       const response = await api.post(`/chats/${chatId}/messages`, {
-        content: content.substring(0, 1000), // Limitando para 1000 caracteres como no backend
+        type: "text",
+        content:
+          typeof message === "string"
+            ? message.substring(0, 1000)
+            : message.content.substring(0, 1000),
       });
       return response.data;
     } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      if (error.response) {
+        console.error("Resposta do servidor:", error.response.data); // Debug
+      }
       throw error;
     }
   },

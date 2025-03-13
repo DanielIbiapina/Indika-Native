@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../contexts/authContext";
@@ -47,12 +48,16 @@ import {
 import ListaDeChats from "../../components/listaDeChats";
 import TelaChat from "../../components/telaChat";
 import { useNavigation } from "@react-navigation/native";
+import { orderService } from "../../services/orderService";
+import { ORDER_STATUS } from "../../constants/orderStatus";
+import generateWelcomeMessage from "../../utils/generateWelcomeMessage";
 
 const MESSAGES_PER_PAGE = 30;
 
 const Mensagens = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -73,7 +78,24 @@ const Mensagens = () => {
       if (showLoader) setLoading(true);
       const response = await chatService.getChats();
 
-      setChats(response);
+      // Se tiver um chat selecionado, preserva seus dados
+      if (selectedChat) {
+        const updatedChats = response.map((chat) => {
+          if (chat.id === selectedChat.id) {
+            return {
+              ...chat,
+              orders: selectedChat.orders || chat.orders || [],
+              currentOrderId:
+                selectedChat.currentOrderId || chat.orders?.[0]?.id || null,
+            };
+          }
+          return chat;
+        });
+        setChats(updatedChats);
+      } else {
+        setChats(response);
+      }
+
       setError(null);
     } catch (error) {
       console.error("Erro ao carregar chats:", error);
@@ -87,6 +109,12 @@ const Mensagens = () => {
   const loadMessages = async (chatId, pageNumber = 1) => {
     try {
       setLoading(true);
+
+      if (!chatId) {
+        console.error("ChatId não fornecido para loadMessages");
+        return;
+      }
+
       const response = await messageService.getMessages(chatId, pageNumber);
 
       // Preparar as mensagens antes de atualizar o estado
@@ -103,7 +131,12 @@ const Mensagens = () => {
       setHasMore(response.length === MESSAGES_PER_PAGE);
       setPage(pageNumber);
     } catch (error) {
-      console.error("Erro ao carregar mensagens:", error);
+      console.error("Erro detalhado ao carregar mensagens:", {
+        error,
+        chatId,
+        pageNumber,
+        stack: error.stack,
+      });
       Alert.alert("Erro", "Não foi possível carregar as mensagens");
     } finally {
       setLoading(false);
@@ -176,49 +209,47 @@ const Mensagens = () => {
     }
   };
 
-  // Função para selecionar um chat (modificada)
+  // Função para selecionar um chat
   const handleSelectChat = async (chat) => {
-    setSelectedChat(chat);
-    setNameChat(chat.participants[0].name);
-    setMessages([]); // Limpa as mensagens antes de carregar novas
-    setPage(1);
-    setHasMore(true);
-    await loadMessages(chat.id, 1);
+    try {
+      if (!chat || !chat.id) {
+        console.error("Chat inválido para seleção");
+        return;
+      }
 
-    // Marca mensagens como lidas quando seleciona o chat
-    if (chat.unreadCount > 0) {
-      await markMessagesAsRead(chat.id);
+      // Garantir que o chat tenha as propriedades necessárias
+      const chatWithDefaults = {
+        ...chat,
+        orders: chat.orders || [],
+        participants: chat.participants || [],
+        lastMessage: chat.lastMessage || null,
+        currentOrderId: chat.currentOrderId || chat.orders?.[0]?.id || null,
+      };
+
+      // Atualiza o chat selecionado
+      setSelectedChat(chatWithDefaults);
+      setNameChat(chatWithDefaults.participants[0]?.name || "Usuário");
+      setMessages([]); // Limpa as mensagens antes de carregar novas
+      setPage(1);
+      setHasMore(true);
+
+      // Carrega as mensagens
+      await loadMessages(chat.id, 1);
+
+      // Marca mensagens como lidas quando seleciona o chat
+      if (chat.unreadCount > 0) {
+        await markMessagesAsRead(chat.id);
+      }
+
+      // Atualiza a lista de chats para preservar os dados deste chat
+      setChats((prevChats) =>
+        prevChats.map((c) => (c.id === chat.id ? chatWithDefaults : c))
+      );
+    } catch (error) {
+      console.error("Erro ao selecionar chat:", error);
+      Alert.alert("Erro", "Não foi possível carregar o chat");
     }
   };
-
-  // Polling de novas mensagens (modificado)
-  const pollNewMessages = useCallback(async () => {
-    if (selectedChat) {
-      try {
-        const response = await messageService.getMessages(
-          selectedChat.id,
-          1,
-          MESSAGES_PER_PAGE
-        );
-
-        if (response.length > 0 && response[0]?.id !== messages[0]?.id) {
-          setMessages((prev) => {
-            const newMessages = response.filter(
-              (newMsg) => !prev.some((oldMsg) => oldMsg.id === newMsg.id)
-            );
-            return [...newMessages, ...prev];
-          });
-
-          // Marca novas mensagens como lidas automaticamente
-          if (selectedChat) {
-            await markMessagesAsRead(selectedChat.id);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao buscar novas mensagens:", error);
-      }
-    }
-  }, [selectedChat, messages]);
 
   // Efeito para carregar chats e iniciar polling de mensagens não lidas
   useEffect(() => {
@@ -234,7 +265,44 @@ const Mensagens = () => {
     }, 30000);
 
     return () => clearInterval(unreadInterval);
-  }, [selectedChat, nameChat]);
+  }, [selectedChat]);
+
+  // Adicione este useEffect para recarregar dados quando a tela é focada
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", async () => {
+      // Recarrega a lista de chats
+      await loadChats();
+
+      // Se tiver um chat selecionado, recarrega seus dados
+      if (selectedChat?.id) {
+        const params = navigation
+          .getState()
+          .routes.find((r) => r.name === "Mensagens")?.params;
+
+        // Preserva os dados do pedido se existirem
+        const updatedChat = {
+          ...selectedChat,
+          orders: params?.order ? [params.order] : selectedChat.orders || [],
+          currentOrderId: params?.order?.id || selectedChat.currentOrderId,
+        };
+
+        // Recarrega as mensagens
+        await loadMessages(selectedChat.id, 1);
+
+        // Atualiza o chat selecionado
+        setSelectedChat(updatedChat);
+
+        // Atualiza a lista de chats
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === selectedChat.id ? updatedChat : chat
+          )
+        );
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, selectedChat]);
 
   // Adicione este useEffect para lidar com parâmetros de rota
   useEffect(() => {
@@ -242,25 +310,112 @@ const Mensagens = () => {
       .getState()
       .routes.find((r) => r.name === "Mensagens")?.params;
 
-    if (params?.providerId) {
+    if (params?.providerId && !selectedChat) {
       handleCreateChat(params.providerId);
+    } else if (params?.order) {
+      // Se tiver um pedido nos parâmetros, atualiza o chat selecionado
+      if (selectedChat) {
+        const updatedChat = {
+          ...selectedChat,
+          orders: [params.order],
+          currentOrderId: params.order.id,
+        };
+        setSelectedChat(updatedChat);
+
+        // Atualiza a lista de chats
+        setChats((prevChats) =>
+          prevChats.map((chat) =>
+            chat.id === selectedChat.id ? updatedChat : chat
+          )
+        );
+      }
     }
   }, [navigation]);
+
+  // Adicione este useEffect para atualizar o título e as opções do header
+  useEffect(() => {
+    if (selectedChat) {
+      navigation.setOptions({
+        headerTitle: selectedChat.participants[0]?.name || "Usuário",
+        headerRight: () => (
+          <TouchableOpacity
+            style={{ marginRight: 16 }}
+            onPress={() => {
+              if (selectedChat.orders?.length > 0) {
+                // Se tiver mais de um pedido, mostra modal de seleção
+                if (selectedChat.orders.length > 1) {
+                  Alert.alert(
+                    "Selecionar Pedido",
+                    "Escolha qual pedido deseja visualizar:",
+                    selectedChat.orders.map((order) => ({
+                      text: `Pedido #${order.id} - ${
+                        order.service?.title || "Serviço"
+                      }`,
+                      onPress: () =>
+                        navigation.navigate("PedidoDetalhes", {
+                          orderId: order.id,
+                        }),
+                    }))
+                  );
+                } else {
+                  // Se tiver apenas um pedido, navega direto
+                  navigation.navigate("PedidoDetalhes", {
+                    orderId: selectedChat.orders[0].id,
+                  });
+                }
+              } else {
+                Alert.alert("Aviso", "Não há pedidos associados a este chat");
+              }
+            }}
+          >
+            <Ionicons name="document-text-outline" size={24} color="#422680" />
+          </TouchableOpacity>
+        ),
+      });
+    } else {
+      navigation.setOptions({
+        headerTitle: "Mensagens",
+        headerRight: null,
+      });
+    }
+  }, [selectedChat, navigation]);
 
   // Adicione esta função para criar/obter chat
   const handleCreateChat = async (providerId) => {
     try {
+      if (!providerId) {
+        console.error("ProviderId não fornecido para criar chat");
+        return;
+      }
+
       setLoading(true);
+
+      // Obter parâmetros de navegação
+      const params = navigation
+        .getState()
+        .routes.find((r) => r.name === "Mensagens")?.params;
+
+      // Criar ou obter chat existente
       const chat = await chatService.createChat(providerId);
 
-      if (chat && chat.id) {
-        await loadMessages(chat.id, 1); // Carrega mensagens antes de selecionar o chat
-        handleSelectChat(chat);
-      } else {
-        console.error("Erro: Chat criado está inválido", chat);
+      if (!chat || !chat.id) {
+        throw new Error("Chat inválido retornado do servidor");
       }
+
+      // Garantir que o chat tenha as propriedades necessárias
+      const chatWithDefaults = {
+        ...chat,
+        orders: params?.order ? [params.order] : chat.orders || [],
+        participants: chat.participants || [],
+        lastMessage: chat.lastMessage || null,
+        currentOrderId: params?.order?.id || chat.orders?.[0]?.id || null,
+      };
+
+      // Carregar mensagens e selecionar o chat
+      await loadMessages(chat.id, 1);
+      handleSelectChat(chatWithDefaults);
     } catch (error) {
-      console.error("Erro ao criar chat:", error);
+      console.error("Erro ao criar/obter chat:", error);
       Alert.alert("Erro", "Não foi possível iniciar a conversa");
     } finally {
       setLoading(false);
@@ -316,6 +471,96 @@ const Mensagens = () => {
     }
   };
 
+  // Função para lidar com ações do orçamento
+  const handleQuotationAction = async (action, quotationMessage) => {
+    try {
+      const quotationData =
+        typeof quotationMessage.content === "string"
+          ? JSON.parse(quotationMessage.content)
+          : quotationMessage.content;
+
+      switch (action) {
+        case "accept":
+          Alert.alert("Confirmar", "Deseja aceitar este orçamento?", [
+            {
+              text: "Não",
+              style: "cancel",
+            },
+            {
+              text: "Sim",
+              onPress: async () => {
+                try {
+                  setLoading(true);
+
+                  // Aceitar o orçamento
+                  await orderService.acceptQuotation(quotationData.orderId);
+
+                  // Atualizar o status da mensagem atual
+                  const updatedContent = {
+                    ...quotationData,
+                    status: ORDER_STATUS.QUOTE_ACCEPTED,
+                  };
+
+                  // Enviar uma nova mensagem com o status atualizado
+                  await messageService.sendMessage(selectedChat.id, {
+                    type: "quotation",
+                    content: JSON.stringify(updatedContent),
+                  });
+
+                  // Recarregar as mensagens para atualizar a UI
+                  await loadMessages(selectedChat.id, 1);
+
+                  Alert.alert("Sucesso", "Orçamento aceito com sucesso!");
+                } catch (error) {
+                  console.error("Erro ao aceitar orçamento:", error);
+                  Alert.alert(
+                    "Erro",
+                    error.message || "Não foi possível aceitar o orçamento"
+                  );
+                } finally {
+                  setLoading(false);
+                }
+              },
+            },
+          ]);
+          break;
+        case "reject":
+          Alert.alert("Confirmar", "Deseja recusar este orçamento?", [
+            {
+              text: "Não",
+              style: "cancel",
+            },
+            {
+              text: "Sim",
+              onPress: async () => {
+                try {
+                  setLoading(true);
+                  await orderService.rejectQuotation(quotationData.orderId);
+                  await loadMessages(selectedChat.id, 1);
+                  Alert.alert("Sucesso", "Orçamento recusado com sucesso!");
+                } catch (error) {
+                  console.error("Erro ao recusar orçamento:", error);
+                  Alert.alert(
+                    "Erro",
+                    error.message || "Não foi possível recusar o orçamento"
+                  );
+                } finally {
+                  setLoading(false);
+                }
+              },
+            },
+          ]);
+          break;
+        default:
+          console.error("Ação não reconhecida:", action);
+          break;
+      }
+    } catch (error) {
+      console.error("Erro ao processar ação do orçamento:", error);
+      Alert.alert("Erro", "Não foi possível processar sua solicitação");
+    }
+  };
+
   // Renderiza item da lista de chats
   const renderChatItem = useCallback(({ item }) => {
     return (
@@ -365,6 +610,11 @@ const Mensagens = () => {
     [user.id]
   );
 
+  const handleStatusUpdate = async () => {
+    // Recarregar as mensagens
+    await loadMessages();
+  };
+
   if (loading) {
     return (
       <LoaderContainer>
@@ -383,8 +633,14 @@ const Mensagens = () => {
           onChangeMessage={setNewMessage}
           onSendMessage={handleSendMessage}
           onLoadMore={handleLoadMore}
-          userId={user.id}
+          userId={user?.id}
           flatListRef={flatListRef}
+          isProvider={user?.isServiceProvider}
+          orderId={selectedChat.orderId}
+          onStatusUpdate={handleStatusUpdate}
+          chatId={selectedChat.id}
+          onRefresh={(page = 1) => loadMessages(selectedChat.id, page)}
+          selectedChat={selectedChat}
         />
       ) : (
         <ListaDeChats

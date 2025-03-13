@@ -15,17 +15,20 @@ export const ChatItem = styled.TouchableOpacity`
   align-items: center;
   padding: 16px;
   background-color: #fff;
+  margin: 8px 16px;
   border-radius: 12px;
-  margin-bottom: 12px;
   elevation: 2;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.25;
+  shadow-radius: 3.84px;
 `;
 
 export const Avatar = styled.Image`
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  margin-right: 16px;
-  background-color: #f0f0f0;
+  width: 50px;
+  height: 50px;
+  border-radius: 25px;
+  margin-right: 12px;
 `;
 
 export const UserInfo = styled.View`
@@ -35,52 +38,59 @@ export const UserInfo = styled.View`
 export const UserName = styled.Text`
   font-size: 16px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.text.primary};
-  margin-bottom: 6px;
+  color: #422680;
+  margin-bottom: 4px;
 `;
 
 export const LastMessage = styled.Text`
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.text.secondary};
+  color: #666;
 `;
 
 export const TimeText = styled.Text`
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.text.secondary};
-  margin-bottom: auto;
+  color: #999;
+  margin-left: 8px;
 `;
 
 export const UnreadBadge = styled.View`
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: #422680;
   border-radius: 12px;
   min-width: 24px;
   height: 24px;
-  align-items: center;
   justify-content: center;
-  margin-left: 12px;
+  align-items: center;
+  margin-left: 8px;
+  padding: 0 8px;
 `;
 
 export const UnreadCount = styled.Text`
   color: #fff;
   font-size: 12px;
   font-weight: bold;
-  padding: 0 8px;
 `;
 
 export const EmptyContainer = styled.View`
   flex: 1;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   padding: 32px;
-  background-color: #fff;
-  border-radius: 12px;
-  margin: 16px;
-  elevation: 2;
 `;
 
 export const EmptyText = styled.Text`
   font-size: 16px;
-  color: ${({ theme }) => theme.colors.text.secondary};
-  margin-top: 16px;
+  color: #666;
   text-align: center;
+`;
+
+export const LoaderContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+`;
+
+export const Divider = styled.View`
+  height: 1px;
+  background-color: ${({ theme }) => theme.colors.border};
+  margin-vertical: 8px;
 `;

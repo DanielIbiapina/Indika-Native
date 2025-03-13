@@ -1,113 +1,173 @@
 import styled from "styled-components/native";
 
-export const Card = styled.View`
-  background-color: #fff;
+export const Container = styled.TouchableOpacity`
+  background-color: white;
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.05);
-  elevation: 3;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
 `;
 
 export const ServiceInfo = styled.View`
   flex-direction: row;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 `;
 
 export const ServiceImage = styled.Image`
-  width: 48px;
-  height: 48px;
+  width: 80px;
+  height: 80px;
   border-radius: 8px;
+  margin-right: 16px;
 `;
 
 export const ServiceDetails = styled.View`
   flex: 1;
-  margin-left: 12px;
+`;
+
+export const ServiceTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: 4px;
+`;
+
+export const ProviderName = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 8px;
 `;
 
 export const StatusBadge = styled.View`
-  padding: 4px 8px;
-  border-radius: 4px;
-  background-color: ${({ status }) => {
+  background-color: ${({ status, theme }) => {
+    const opacity = "20"; // 20% de opacidade
     switch (status) {
-      case "pending":
-        return "#fff3dc";
-      case "accepted":
-        return "#e3f5ff";
-      case "in_progress":
-        return "#e8f5e9";
-      case "completed":
-        return "#e6f4ea";
-      case "paid":
-        return "#e6f4ea";
+      case "WAITING_QUOTE":
+        return "#FFA50020"; // Laranja com opacidade
+      case "QUOTE_SENT":
+        return "#0000FF20"; // Azul com opacidade
+      case "QUOTE_REJECTED":
+        return "#FF000020"; // Vermelho com opacidade
+      case "QUOTE_ACCEPTED":
+        return "#00800020"; // Verde com opacidade
+      case "WAITING_PAYMENT":
+        return `${theme.colors.primary}${opacity}`;
       case "PAID":
-        return "#e6f4ea";
-      case "cancelled":
-        return "#ffebee";
+        return "#00800020"; // Verde com opacidade
+      case "IN_PROGRESS":
+        return "#0000FF20"; // Azul com opacidade
+      case "COMPLETED":
+        return "#00800020"; // Verde com opacidade
+      case "CANCELLED":
+        return "#FF000020"; // Vermelho com opacidade
       default:
-        return "#f5f5f5";
+        return `${theme.colors.text.secondary}${opacity}`;
     }
   }};
+  padding: 6px 12px;
+  border-radius: 16px;
+  align-self: flex-start;
+`;
+
+export const StatusText = styled.Text`
   color: ${({ status }) => {
     switch (status) {
-      case "pending":
-        return "#b25e09";
-      case "accepted":
-        return "#0066ff";
-      case "in_progress":
-        return "#1b5e20";
-      case "completed":
-        return "#1e8e3e";
-      case "paid":
-        return "#1e8e3e";
+      case "WAITING_QUOTE":
+        return "#FFA500"; // Laranja
+      case "QUOTE_SENT":
+        return "#0000FF"; // Azul
+      case "QUOTE_REJECTED":
+        return "#FF0000"; // Vermelho
+      case "QUOTE_ACCEPTED":
+        return "#008000"; // Verde
+      case "WAITING_PAYMENT":
+        return "#422680"; // Cor primária
       case "PAID":
-        return "#e6f4ea";
-      case "cancelled":
-        return "#c62828";
+        return "#008000"; // Verde
+      case "IN_PROGRESS":
+        return "#0000FF"; // Azul
+      case "COMPLETED":
+        return "#008000"; // Verde
+      case "CANCELLED":
+        return "#FF0000"; // Vermelho
       default:
-        return "#666";
+        return "#666666";
     }
   }};
+  font-size: 13px;
+  font-weight: 500;
+`;
+
+export const DateText = styled.Text`
+  color: ${({ theme }) => theme.colors.text.secondary};
+  font-size: 14px;
+  margin-bottom: 12px;
 `;
 
 export const Price = styled.Text`
   font-size: 18px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.text.primary};
-  margin-bottom: 8px;
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 16px;
+`;
+
+export const ButtonsContainer = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+export const ActionButton = styled.TouchableOpacity`
+  background-color: ${({ variant, theme }) =>
+    variant === "secondary" ? "white" : theme.colors.primary};
+  padding: 12px 16px;
+  border-radius: 24px;
+  flex: 1;
+  align-items: center;
+  elevation: ${({ variant }) => (variant === "secondary" ? 0 : 2)};
+  border-width: ${({ variant }) => (variant === "secondary" ? 1 : 0)}px;
+  border-color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const ButtonText = styled.Text`
+  color: ${({ variant, theme }) =>
+    variant === "secondary" ? theme.colors.primary : "white"};
+  font-weight: 600;
+  font-size: 14px;
 `;
 
 export const ActionsContainer = styled.View`
   flex-direction: row;
-  gap: 8px;
-  margin-top: 8px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
 `;
 
-export const ActionButton = styled.TouchableOpacity`
-  flex: 1;
-  padding: 8px;
-  border-radius: 8px;
-  align-items: center;
-  justify-content: center;
-
-  ${({ variant }) =>
-    variant === "secondary"
-      ? `
-        background-color: #fff;
-        border: 1px solid #dc3545;
-      `
-      : `
-        background-color: #422680;
-      `}
+export const RateButton = styled(ActionButton)`
+  margin-top: 16px;
 `;
 
-export const RateButton = styled.TouchableOpacity`
-  background-color: ${({ theme }) => theme.colors.primary};
-  border-radius: 8px;
-  padding: 12px 24px;
+export const OrderDetailsButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  justify-content: center;
-  margin-top: 8px;
+  background-color: white;
+  padding: 8px 16px;
+  border-radius: 24px;
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+`;
+
+export const OrderDetailsText = styled.Text`
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 500;
+  font-size: 14px;
+  margin-left: 8px;
 `;
