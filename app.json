@@ -4,7 +4,7 @@
     "slug": "indika-native",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/indikalogo.jpg",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/indikalogo.jpg",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
       "intentFilters": [
@@ -41,11 +41,9 @@
       "package": "com.indika.app",
       "versionCode": 1,
       "config": {
-        "googleSignIn": {
-          "apiKey": "86807468256-khufgr65rjpdhsa5hvooesnm07shfulk.apps.googleusercontent.com"
-        }
-      },
-      "googleServicesFile": "./google-services.json"
+        
+      }
+      
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -57,7 +55,13 @@
       }
     },
     "plugins": [
-      "@react-native-google-signin/google-signin"
-    ]
+      
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": false
+    }
   }
 }

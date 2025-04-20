@@ -74,9 +74,11 @@ const Mensagens = () => {
 
   // Carrega lista de chats
   const loadChats = async (showLoader = true) => {
+    console.log("loadChats");
     try {
       if (showLoader) setLoading(true);
       const response = await chatService.getChats();
+      console.log(response);
 
       // Se tiver um chat selecionado, preserva seus dados
       if (selectedChat) {
@@ -107,6 +109,7 @@ const Mensagens = () => {
 
   // Função para carregar mensagens
   const loadMessages = async (chatId, pageNumber = 1) => {
+    console.log("loadMessages");
     try {
       setLoading(true);
 
@@ -211,11 +214,13 @@ const Mensagens = () => {
 
   // Função para selecionar um chat
   const handleSelectChat = async (chat) => {
+    console.log("handleSelectChat");
     try {
       if (!chat || !chat.id) {
         console.error("Chat inválido para seleção");
         return;
       }
+      console.log(chat);
 
       // Garantir que o chat tenha as propriedades necessárias
       const chatWithDefaults = {
@@ -306,6 +311,7 @@ const Mensagens = () => {
 
   // Adicione este useEffect para lidar com parâmetros de rota
   useEffect(() => {
+    console.log("useEffectParams");
     const params = navigation
       .getState()
       .routes.find((r) => r.name === "Mensagens")?.params;
@@ -382,11 +388,14 @@ const Mensagens = () => {
 
   // Adicione esta função para criar/obter chat
   const handleCreateChat = async (providerId) => {
+    console.log("handleCreateChat");
     try {
       if (!providerId) {
         console.error("ProviderId não fornecido para criar chat");
         return;
       }
+      console.log("providerId", providerId);
+      console.log("user.id", user.id);
 
       setLoading(true);
 
@@ -635,7 +644,6 @@ const Mensagens = () => {
           onLoadMore={handleLoadMore}
           userId={user?.id}
           flatListRef={flatListRef}
-          isProvider={user?.isServiceProvider}
           orderId={selectedChat.orderId}
           onStatusUpdate={handleStatusUpdate}
           chatId={selectedChat.id}

@@ -52,6 +52,7 @@ import { orderService } from "../../services/orderService";
 import { reviewService } from "../../services/reviewService";
 import ReviewCard from "../../components/reviewCard";
 import { ORDER_STATUS_LABELS } from "../../constants/orderStatus";
+import { useOrder } from "../../contexts/orderContext";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -70,10 +71,11 @@ const TAB_LABELS = {
 const Profile = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
+  const { orderList, loadOrders } = useOrder();
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(TABS.RECEIVED_ORDERS);
   const [profileData, setProfileData] = useState(null);
   const [receivedOrders, setReceivedOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [services, setServices] = useState([]);
@@ -102,11 +104,16 @@ const Profile = () => {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (user?.isProvider) {
+      loadOrders({ providerId: user.id });
+    }
+  }, [user]);
+
   const loadProfileData = async () => {
     try {
       setLoading(true);
       const profile = await userService.getProfile();
-
       setProfileData(profile);
     } catch (err) {
       setError("Erro ao carregar dados do perfil");
@@ -118,6 +125,7 @@ const Profile = () => {
 
   const loadMyServices = async (page = 1) => {
     try {
+      setLoading(true);
       setPagination((prev) => ({
         ...prev,
         services: { ...prev.services, loading: true },
@@ -141,11 +149,14 @@ const Profile = () => {
     } catch (error) {
       console.error("Erro ao carregar serviços:", error);
       setError("Erro ao carregar serviços");
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadReceivedOrders = async (page = 1) => {
     try {
+      setLoading(true);
       setPagination((prev) => ({
         ...prev,
         orders: { ...prev.orders, loading: true },
@@ -170,11 +181,14 @@ const Profile = () => {
     } catch (error) {
       console.error("Erro ao carregar pedidos:", error);
       setError("Erro ao carregar pedidos recebidos");
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadReviews = async (page = 1) => {
     try {
+      setLoading(true);
       setPagination((prev) => ({
         ...prev,
         reviews: { ...prev.reviews, loading: true },
@@ -201,6 +215,8 @@ const Profile = () => {
     } catch (error) {
       console.error("Erro ao carregar avaliações:", error);
       setError("Erro ao carregar avaliações");
+    } finally {
+      setLoading(false);
     }
   };
 

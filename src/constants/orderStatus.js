@@ -3,6 +3,9 @@ export const ORDER_STATUS = {
   QUOTE_SENT: "QUOTE_SENT", // Prestador enviou orçamento
   QUOTE_ACCEPTED: "QUOTE_ACCEPTED", // Cliente aceitou orçamento
   QUOTE_REJECTED: "QUOTE_REJECTED", // Orçamento foi recusado
+  PENDING_PAYMENT: "PENDING_PAYMENT", // Novo status
+  PAID: "PAID", // Novo status
+  COMPLETED: "COMPLETED", // Novo status
 };
 
 export const ORDER_STATUS_LABELS = {
@@ -10,6 +13,9 @@ export const ORDER_STATUS_LABELS = {
   QUOTE_SENT: "Orçamento enviado",
   QUOTE_ACCEPTED: "Orçamento aceito",
   QUOTE_REJECTED: "Orçamento recusado",
+  PENDING_PAYMENT: "Aguardando pagamento",
+  PAID: "Pagamento realizado",
+  COMPLETED: "Concluído",
 };
 
 export const MESSAGE_TYPES = {
@@ -26,7 +32,11 @@ export const getStatusColor = (status) => {
     case "QUOTE_REJECTED":
       return "#FF0000"; // Vermelho
     case "QUOTE_ACCEPTED":
+    case "PAID":
+    case "COMPLETED":
       return "#008000"; // Verde
+    case "PENDING_PAYMENT":
+      return "#FFA500";
     default:
       return "#808080"; // Cinza padrão
   }

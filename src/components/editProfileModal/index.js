@@ -47,7 +47,7 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
       if (formData.name !== profile.name) {
         const profileResponse = await userService.updateProfile({
           name: formData.name,
-          isServiceProvider: profile.isServiceProvider,
+          //isServiceProvider: profile.isServiceProvider,
         });
         Object.assign(updatedProfile, profileResponse);
       }

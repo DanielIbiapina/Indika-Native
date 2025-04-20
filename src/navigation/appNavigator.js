@@ -22,7 +22,6 @@ import CriarServico from "../screens/services/criar";
 import HistoricoPagamento from "../screens/pagamentos/historicoPagamento";
 import Saques from "../screens/pagamentos/saques";
 import SetupMetodoPagamento from "../screens/pagamentos/setupMetodoPagamento";
-import TestePagamento from "../screens/pagamentos/testePagamento";
 
 // Importar a nova tela
 import ProcessarPagamento from "../screens/pagamentos/processarPagamento";
@@ -63,10 +62,10 @@ const MainStack = () => {
       <Stack.Screen
         name="ProcessarPagamento"
         component={ProcessarPagamento}
-        /*options={{
+        options={{
           headerShown: true,
-          title: "Pagamento",
-        }}*/
+          title: "Realizar Pagamento",
+        }}
       />
 
       <Stack.Screen
@@ -105,11 +104,6 @@ const MainStack = () => {
             backgroundColor: "#fff",
           },
         }}
-      />
-      <Stack.Screen
-        name="TestePagamento"
-        component={TestePagamento}
-        options={{ title: "Teste de Pagamento" }}
       />
 
       <Stack.Screen

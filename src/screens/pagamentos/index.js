@@ -38,17 +38,6 @@ const Pagamentos = () => {
             <Ionicons name="chevron-forward" size={24} color="#666" />
           </MenuItem>
         </Section>
-
-        {__DEV__ && (
-          <Section>
-            <SectionTitle>Desenvolvimento</SectionTitle>
-            <MenuItem onPress={() => navigation.navigate("TestePagamento")}>
-              <Ionicons name="bug-outline" size={24} color="#666" />
-              <MenuItemText>Teste de Pagamento</MenuItemText>
-              <Ionicons name="chevron-forward" size={24} color="#666" />
-            </MenuItem>
-          </Section>
-        )}
       </ScrollView>
     </Container>
   );

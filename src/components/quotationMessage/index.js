@@ -44,13 +44,20 @@ const getStatusIcon = (status) => {
 const QuotationMessage = ({
   message,
   isProvider,
+  setIsProvider,
   onAccept,
   onReject,
   orderId,
+  userId,
 }) => {
   const navigation = useNavigation();
   const { activeOrder, getOrderDetails } = useOrder();
   const [loading, setLoading] = useState(false);
+
+  console.log("message", message);
+  console.log("isProvider", isProvider);
+  console.log("orderId", orderId);
+  console.log("activeOrder", activeOrder);
 
   const quotationData =
     typeof message.content === "string"
@@ -61,6 +68,8 @@ const QuotationMessage = ({
     if (orderId && !activeOrder) {
       getOrderDetails(orderId);
     }
+    setIsProvider(activeOrder?.providerId === userId);
+    console.log("oi");
   }, [orderId]);
 
   // Mostrar botão de enviar orçamento se:
@@ -124,14 +133,14 @@ const QuotationMessage = ({
             : "Orçamento do Serviço"}
         </QuotationTitle>
         {quotationData.messageType === MESSAGE_TYPES.QUOTE && (
-          <QuotationStatus status={activeOrder.status}>
+          <QuotationStatus status={activeOrder?.status}>
             <StatusIcon
-              name={getStatusIcon(activeOrder.status)}
+              name={getStatusIcon(activeOrder?.status)}
               size={16}
-              status={activeOrder.status}
+              status={activeOrder?.status}
             />
-            <StatusText status={activeOrder.status}>
-              {ORDER_STATUS_LABELS[activeOrder.status]}
+            <StatusText status={activeOrder?.status}>
+              {ORDER_STATUS_LABELS[activeOrder?.status]}
             </StatusText>
           </QuotationStatus>
         )}
@@ -213,16 +222,18 @@ const QuotationMessage = ({
         </ButtonsContainer>
       )}
 
-      {activeOrder?.status === ORDER_STATUS.QUOTE_ACCEPTED && !isProvider && (
-        <ActionButton
-          variant="accept"
-          onPress={handlePayment}
-          disabled={!activeOrder?.providerId} // Desabilitar se não tiver providerId
-        >
-          <ButtonIcon name="card-outline" size={18} />
-          <ButtonText>Ir para pagamento</ButtonText>
-        </ActionButton>
-      )}
+      {activeOrder?.status === ORDER_STATUS.QUOTE_ACCEPTED &&
+        quotationData.messageType === MESSAGE_TYPES.QUOTE &&
+        !isProvider && (
+          <ActionButton
+            variant="accept"
+            onPress={handlePayment}
+            disabled={!activeOrder?.providerId} // Desabilitar se não tiver providerId
+          >
+            <ButtonIcon name="card-outline" size={18} />
+            <ButtonText>Ir para pagamento</ButtonText>
+          </ActionButton>
+        )}
     </QuotationContainer>
   );
 };

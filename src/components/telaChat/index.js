@@ -44,7 +44,6 @@ const TelaChat = ({
   onLoadMore,
   userId,
   flatListRef,
-  isProvider,
   orderId,
   onStatusUpdate,
   chatId,
@@ -55,7 +54,13 @@ const TelaChat = ({
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState(null);
+  const [isProvider, setIsProvider] = useState(false);
   const navigation = useNavigation();
+
+  //console.log("messages", messages);
+  //console.log("selectedChat", selectedChat);
+  //console.log("orderId", orderId);
+  //console.log("isProvider", isProvider);
 
   // Função para identificar o pedido atual baseado nas mensagens
   const identifyCurrentOrder = useCallback(() => {
@@ -233,9 +238,11 @@ const TelaChat = ({
           <QuotationMessage
             message={item}
             isProvider={isProvider}
+            setIsProvider={setIsProvider}
             onAccept={() => handleQuotationAction("accept", item)}
             onReject={() => handleQuotationAction("reject", item)}
             orderId={currentOrderId}
+            userId={userId}
           />
         ) : (
           <MessageItem

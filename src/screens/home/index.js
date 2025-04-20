@@ -38,7 +38,7 @@ const CATEGORY_ICONS = {
 };
 
 const Home = () => {
-  const { signed, user } = useAuth();
+  const { signed, user, logout } = useAuth();
   const navigation = useNavigation();
   const [categories, setCategories] = useState([]);
   const [services, setServices] = useState({});
@@ -163,7 +163,9 @@ const Home = () => {
           </LoginBanner>
         )}
 
-        <Title>Boas-vindas{user ? `, ${user.name}` : ""}</Title>
+        <Title onPress={logout}>
+          Boas-vindas{user ? `, ${user.name}` : ""}
+        </Title>
         <SearchBar placeholder="O que você precisa?" />
 
         <CategoryList

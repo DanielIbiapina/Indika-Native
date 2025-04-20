@@ -129,9 +129,9 @@ const ProcessarPagamento = () => {
   if (error) {
     return (
       <Container>
-        <Header>
+        {/*<Header>
           <Title>Realizar Pagamento</Title>
-        </Header>
+        </Header>*/}
         <ErrorContainer>
           <Ionicons name="alert-circle" size={48} color={theme.colors.error} />
           <ErrorText>{error}</ErrorText>
@@ -162,11 +162,7 @@ const ProcessarPagamento = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>Realizar Pagamento</Title>
-      </Header>
-
-      <ServiceCard>
+      {/*<ServiceCard>
         <ServiceTitle>{serviceTitle}</ServiceTitle>
         <PriceContainer>
           <PriceLabel>Valor a pagar</PriceLabel>
@@ -177,7 +173,7 @@ const ProcessarPagamento = () => {
             }).format(amount)}
           </Price>
         </PriceContainer>
-      </ServiceCard>
+      </ServiceCard>*/}
 
       {paymentStatus && (
         <PaymentStatus status={paymentStatus.paymentStatus} amount={amount} />

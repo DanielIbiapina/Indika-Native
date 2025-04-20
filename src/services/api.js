@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 
 // Criação da instância do Axios
 // Adicione no início do seu App.js ou index.js
-
+console.log(process.env.EXPO_API_URL);
 const api = axios.create({
   baseURL: process.env.EXPO_API_URL, // Ajuste conforme sua configuração de ambiente
 });
