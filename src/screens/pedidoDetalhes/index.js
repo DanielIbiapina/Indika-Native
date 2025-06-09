@@ -30,6 +30,7 @@ import {
   CardContent,
   DetailRow,
   DetailLabel,
+  DetailLabelText,
   DetailValue,
   UserCard,
   QuotationAmount,
@@ -82,6 +83,68 @@ import {
   UserInfoText,
   ActionQuotationButton,
   ActionQuotationButtonText,
+  ServiceInfoSection,
+  ScheduleHighlight,
+  ScheduleIcon,
+  ScheduleInfo,
+  ScheduleDate,
+  SchedulePeriod,
+  DetailsSection,
+  ObservationsCard,
+  ObservationsTitle,
+  ObservationsTitleText,
+  ObservationsText,
+  CancelledContainer,
+  CancelledText,
+  CancelledReason,
+  QuotationDetailsSection,
+  QuotationPrice,
+  QuotationDescriptionCard,
+  QuotationDescriptionTitle,
+  QuotationDescriptionTitleText,
+  QuotationValueContainer,
+  QuotationValueMain,
+  QuotationValueLabel,
+  QuotationDetailsGrid,
+  QuotationDetailItem,
+  QuotationDetailIcon,
+  QuotationDetailContent,
+  QuotationDetailLabel,
+  QuotationDetailValue,
+  QuotationMessageCard,
+  QuotationMessageTitle,
+  QuotationMessageText,
+  QuotationButtonsContainer,
+  QuotationAcceptButton,
+  QuotationRejectButton,
+  QuotationButtonText,
+  ServiceHeaderSection,
+  ServiceHeaderInfo,
+  ServiceDetailsGrid,
+  ServiceDetailItem,
+  ServiceDetailIcon,
+  ServiceDetailContent,
+  ServiceDetailLabel,
+  ServiceDetailValue,
+  ClientObservationsCard,
+  ClientObservationsHeader,
+  ClientObservationsTitle,
+  ClientObservationsText,
+  QuotationRejectButtonText,
+  ClientRequestBadge,
+  ClientRequestBadgeText,
+  ClientRequestGrid,
+  ClientRequestItem,
+  ClientRequestIcon,
+  ClientRequestContent,
+  ClientRequestLabel,
+  ClientRequestValue,
+  ClientRequestNote,
+  ClientRequestNoteHeader,
+  ClientRequestNoteTitle,
+  ClientRequestNoteText,
+  ClientRequestFooter,
+  ClientRequestDate,
 } from "./styles";
 import QuotationModal from "../../components/quotationModal";
 import ErrorView from "../../components/errorView";
@@ -90,6 +153,7 @@ import { useTheme } from "@react-navigation/native";
 import { generateQuotationMessage } from "../../utils/generateQuotationMessage";
 import { messageService } from "../../services/messageService";
 import { chatService } from "../../services/chatService";
+import { paymentService } from "../../services/paymentService";
 
 const PedidoDetalhes = ({ route }) => {
   const { orderId } = route.params;
@@ -163,10 +227,19 @@ const PedidoDetalhes = ({ route }) => {
   const isProvider = user?.id === activeOrder?.providerId;
 
   const handleChat = () => {
-    navigation.navigate("Chat", {
-      orderId: orderId,
-      otherUser: isProvider ? activeOrder.client : activeOrder.provider,
-    });
+    if (isProvider) {
+      navigation.navigate("Mensagens", {
+        clientId: activeOrder?.clientId,
+        orderId: activeOrder?.id,
+        order: activeOrder,
+      });
+    } else {
+      navigation.navigate("Mensagens", {
+        providerId: activeOrder?.providerId,
+        orderId: activeOrder?.id,
+        order: activeOrder,
+      });
+    }
   };
 
   const formatDate = (date) => {
@@ -268,12 +341,42 @@ const PedidoDetalhes = ({ route }) => {
       return;
     }
 
-    navigation.navigate("ProcessarPagamento", {
+    navigation.navigate("ConfirmarPagamento", {
       orderId: activeOrder.id,
       amount: latestQuotation.price,
       serviceTitle: activeOrder.service.title,
       providerId: activeOrder.providerId,
     });
+  };
+
+  const handleConfirmPayment = async () => {
+    try {
+      console.log("=== BUSCAR PAYMENT SEPARADAMENTE ===");
+
+      // Buscar todos os pagamentos do usuário
+      const allPayments = await paymentService.getPaymentHistory();
+      console.log("Todos os pagamentos:", allPayments);
+
+      // Encontrar o pagamento deste pedido
+      const orderPayment = allPayments.find(
+        (payment) => payment.orderId === activeOrder.id
+      );
+
+      if (!orderPayment) {
+        Alert.alert("Erro", "Nenhum pagamento encontrado para este pedido");
+        return;
+      }
+
+      console.log("Payment encontrado:", orderPayment);
+
+      // Confirmar recebimento
+      await paymentService.confirmDirectPayment(orderPayment.id);
+      Alert.alert("Sucesso", "Pagamento confirmado com sucesso!");
+      loadOrderDetails();
+    } catch (error) {
+      console.error("Erro:", error);
+      Alert.alert("Erro", "Não foi possível confirmar o pagamento");
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -303,63 +406,93 @@ const PedidoDetalhes = ({ route }) => {
     const latestQuotation = activeOrder.quotations[0];
 
     return (
-      <QuotationCard status={activeOrder.status}>
+      <Card>
         <CardHeader>
-          <CardTitle>Orçamento Atual</CardTitle>
-          <StatusBadge status={activeOrder.status}>
-            <Ionicons
-              name={getStatusIcon(activeOrder.status)}
-              size={16}
-              color={getStatusColor(activeOrder.status)}
-            />
-            <StatusText status={activeOrder.status}>
-              {ORDER_STATUS_LABELS[activeOrder.status]}
-            </StatusText>
-          </StatusBadge>
+          <CardTitle>Orçamento</CardTitle>
         </CardHeader>
         <CardContent>
-          <HighlightedInfo>
-            <HighlightedValue>
-              R$ {latestQuotation.price.toFixed(2)}
-            </HighlightedValue>
-            <HighlightedLabel>Valor do orçamento</HighlightedLabel>
-          </HighlightedInfo>
+          <QuotationValueContainer>
+            <QuotationValueMain>
+              R${" "}
+              {latestQuotation.price.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+              })}
+            </QuotationValueMain>
+            <QuotationValueLabel>Valor proposto</QuotationValueLabel>
+          </QuotationValueContainer>
 
-          <QuotationDate>
-            Enviado em {formatDateTime(latestQuotation.createdAt)}
-          </QuotationDate>
+          <QuotationDetailsGrid>
+            <QuotationDetailItem>
+              <QuotationDetailIcon>
+                <Ionicons name="calendar-outline" size={18} color="#666" />
+              </QuotationDetailIcon>
+              <QuotationDetailContent>
+                <QuotationDetailLabel>Data do serviço</QuotationDetailLabel>
+                <QuotationDetailValue>
+                  {formatDate(activeOrder?.scheduledDate)}
+                </QuotationDetailValue>
+              </QuotationDetailContent>
+            </QuotationDetailItem>
+
+            <QuotationDetailItem>
+              <QuotationDetailIcon>
+                <Ionicons name="time-outline" size={18} color="#666" />
+              </QuotationDetailIcon>
+              <QuotationDetailContent>
+                <QuotationDetailLabel>Período</QuotationDetailLabel>
+                <QuotationDetailValue>
+                  {activeOrder?.period === "morning"
+                    ? "Manhã"
+                    : activeOrder?.period === "afternoon"
+                    ? "Tarde"
+                    : "Noite"}
+                </QuotationDetailValue>
+              </QuotationDetailContent>
+            </QuotationDetailItem>
+
+            <QuotationDetailItem>
+              <QuotationDetailIcon>
+                <Ionicons name="document-text-outline" size={18} color="#666" />
+              </QuotationDetailIcon>
+              <QuotationDetailContent>
+                <QuotationDetailLabel>Enviado em</QuotationDetailLabel>
+                <QuotationDetailValue>
+                  {formatDateTime(latestQuotation.createdAt)}
+                </QuotationDetailValue>
+              </QuotationDetailContent>
+            </QuotationDetailItem>
+          </QuotationDetailsGrid>
 
           {latestQuotation.message && (
-            <QuotationDescription>
-              {latestQuotation.message}
-            </QuotationDescription>
+            <QuotationMessageCard>
+              <QuotationMessageTitle>
+                Observações do prestador
+              </QuotationMessageTitle>
+              <QuotationMessageText>
+                {latestQuotation.message}
+              </QuotationMessageText>
+            </QuotationMessageCard>
           )}
 
           {!isProvider && activeOrder.status === "QUOTE_SENT" && (
-            <QuotationActions>
-              <ActionButton variant="primary" onPress={handleAcceptQuotation}>
+            <QuotationButtonsContainer>
+              <QuotationAcceptButton onPress={handleAcceptQuotation}>
                 <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                <ActionButtonText hasIcon>Aceitar</ActionButtonText>
-              </ActionButton>
-              <ActionButton variant="secondary" onPress={handleRejectQuotation}>
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={theme.colors.primary}
-                />
-                <ActionButtonText variant="secondary" hasIcon>
-                  Rejeitar
-                </ActionButtonText>
-              </ActionButton>
-            </QuotationActions>
+                <QuotationButtonText>Aceitar Orçamento</QuotationButtonText>
+              </QuotationAcceptButton>
+              <QuotationRejectButton onPress={handleRejectQuotation}>
+                <Ionicons name="close-circle" size={20} color="#dc3545" />
+                <QuotationRejectButtonText>Recusar</QuotationRejectButtonText>
+              </QuotationRejectButton>
+            </QuotationButtonsContainer>
           )}
         </CardContent>
-      </QuotationCard>
+      </Card>
     );
   };
 
   const renderProgressTracker = () => {
-    // Define the progress stages
+    // Simplificar os estágios removendo PENDING_CONFIRMATION
     const stages = [
       { id: "WAITING_QUOTE", label: "Aguardando", icon: "time-outline" },
       { id: "QUOTE_SENT", label: "Orçamento", icon: "document-text-outline" },
@@ -368,12 +501,8 @@ const PedidoDetalhes = ({ route }) => {
         label: "Aprovado",
         icon: "checkmark-circle-outline",
       },
-      { id: "PAID", label: "Pago", icon: "card-outline" },
-      {
-        id: "COMPLETED",
-        label: "Concluído",
-        icon: "checkmark-done-circle-outline",
-      },
+      { id: "PAID", label: "Pago", icon: "checkmark-done-outline" },
+      { id: "COMPLETED", label: "Concluído", icon: "flag-outline" },
     ];
 
     // Helper function to determine if a stage is completed
@@ -383,6 +512,7 @@ const PedidoDetalhes = ({ route }) => {
         QUOTE_SENT: 2,
         QUOTE_REJECTED: 1, // Rejected goes back to waiting
         QUOTE_ACCEPTED: 3,
+        PAYMENT_PENDING: 3, // Mapear para approved
         PAID: 4,
         COMPLETED: 5,
         CANCELLED: 0,
@@ -402,7 +532,7 @@ const PedidoDetalhes = ({ route }) => {
       <Card>
         <CardHeader>
           <CardTitle>Status do Pedido</CardTitle>
-          {/*<StatusBadge status={activeOrder.status}>
+          <StatusBadge status={activeOrder.status}>
             <Ionicons
               name={getStatusIcon(activeOrder.status)}
               size={16}
@@ -411,57 +541,75 @@ const PedidoDetalhes = ({ route }) => {
             <StatusText status={activeOrder.status}>
               {ORDER_STATUS_LABELS[activeOrder.status]}
             </StatusText>
-          </StatusBadge>*/}
+          </StatusBadge>
         </CardHeader>
         <CardContent>
           {isCancelled ? (
-            <View style={{ alignItems: "center", padding: 12 }}>
+            <CancelledContainer>
               <Ionicons
                 name="close-circle"
-                size={48}
+                size={64}
                 color={getStatusColor("CANCELLED")}
               />
-              <HighlightedLabel style={{ marginTop: 12, fontSize: 16 }}>
-                Este pedido foi cancelado
-              </HighlightedLabel>
-            </View>
+              <CancelledText>Este pedido foi cancelado</CancelledText>
+              {activeOrder.cancellationReason && (
+                <CancelledReason>
+                  {activeOrder.cancellationReason}
+                </CancelledReason>
+              )}
+            </CancelledContainer>
           ) : (
             <ProgressWrapper>
               <ProgressContainer>
-                <ProgressLine />
-                {stages.map((stage, index) => (
-                  <ProgressStage
-                    key={index}
-                    isFirst={index === 0}
-                    isLast={index === stages.length - 1}
-                  >
-                    <ProgressStageCircle
-                      completed={isStageCompleted(stage.id)}
-                      isRejected={isRejected && stage.id === "QUOTE_SENT"}
-                      current={activeOrder.status === stage.id}
-                    >
-                      <Ionicons
-                        name={
-                          isRejected && stage.id === "QUOTE_SENT"
-                            ? "close-outline"
-                            : stage.icon
-                        }
-                        size={16}
-                        color={
-                          isStageCompleted(stage.id)
-                            ? "#fff"
-                            : theme.colors.text.secondary
-                        }
-                      />
-                    </ProgressStageCircle>
-                    <ProgressStageText
-                      completed={isStageCompleted(stage.id)}
-                      current={activeOrder.status === stage.id}
-                    >
-                      {stage.label}
-                    </ProgressStageText>
-                  </ProgressStage>
-                ))}
+                {stages.map((stage, index) => {
+                  const isCompleted = isStageCompleted(stage.id);
+                  const isCurrent =
+                    activeOrder.status === stage.id ||
+                    (stage.id === "QUOTE_ACCEPTED" &&
+                      activeOrder.status === "PAYMENT_PENDING");
+                  const isRejectedStage =
+                    isRejected && stage.id === "QUOTE_SENT";
+
+                  return (
+                    <ProgressStage key={index}>
+                      <ProgressStageCircle
+                        completed={isCompleted}
+                        isRejected={isRejectedStage}
+                        current={isCurrent}
+                      >
+                        <Ionicons
+                          name={isRejectedStage ? "close-outline" : stage.icon}
+                          size={18}
+                          color={
+                            isCompleted || isCurrent
+                              ? "#fff"
+                              : theme.colors.text.secondary
+                          }
+                        />
+                      </ProgressStageCircle>
+                      <ProgressStageText
+                        completed={isCompleted}
+                        current={isCurrent}
+                      >
+                        {stage.label}
+                      </ProgressStageText>
+
+                      {/* Linha conectora */}
+                      {index < stages.length - 1 && (
+                        <ProgressLine
+                          completed={isCompleted}
+                          style={{
+                            position: "absolute",
+                            top: 16,
+                            left: 32,
+                            width: 60,
+                            height: 2,
+                          }}
+                        />
+                      )}
+                    </ProgressStage>
+                  );
+                })}
               </ProgressContainer>
             </ProgressWrapper>
           )}
@@ -583,36 +731,14 @@ const PedidoDetalhes = ({ route }) => {
                 />
               </UserCard>
 
-              {/*<UserInfoRow>
-                <UserInfoIcon>
-                  <Ionicons
-                    name="call-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </UserInfoIcon>
-                <UserInfoText>
-                  {providerUser.phone || "Telefone não disponível"}
-                </UserInfoText>
-              </UserInfoRow>
-
-              <UserInfoRow>
-                <UserInfoIcon>
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </UserInfoIcon>
-                <UserInfoText>
-                  {providerUser.email || "Email não disponível"}
-                </UserInfoText>
-              </UserInfoRow>*/}
-
-              <ActionQuotationButton onPress={handleChat}>
-                <Ionicons name="chatbubbles-outline" size={18} color="#fff" />
-                <ActionQuotationButtonText>Conversar</ActionQuotationButtonText>
-              </ActionQuotationButton>
+              {!isProvider && (
+                <ActionQuotationButton onPress={handleChat}>
+                  <Ionicons name="chatbubbles-outline" size={18} color="#fff" />
+                  <ActionQuotationButtonText>
+                    Conversar
+                  </ActionQuotationButtonText>
+                </ActionQuotationButton>
+              )}
             </CardContent>
           </Card>
         )}
@@ -646,32 +772,6 @@ const PedidoDetalhes = ({ route }) => {
                 />
               </UserCard>
 
-              {/*<UserInfoRow>
-                <UserInfoIcon>
-                  <Ionicons
-                    name="call-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </UserInfoIcon>
-                <UserInfoText>
-                  {clientUser.phone || "Telefone não disponível"}
-                </UserInfoText>
-              </UserInfoRow>
-
-              <UserInfoRow>
-                <UserInfoIcon>
-                  <Ionicons
-                    name="mail-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </UserInfoIcon>
-                <UserInfoText>
-                  {clientUser.email || "Email não disponível"}
-                </UserInfoText>
-              </UserInfoRow>*/}
-
               {isProvider && (
                 <ActionQuotationButton onPress={handleChat}>
                   <Ionicons name="chatbubbles-outline" size={18} color="#fff" />
@@ -689,15 +789,120 @@ const PedidoDetalhes = ({ route }) => {
 
   const renderDetailsTab = () => (
     <>
+      {/* 1. Status do Pedido */}
       {renderProgressTracker()}
 
+      {/* 2. Solicitação do Cliente - só para prestadores e SEM orçamento */}
+      {isProvider && !activeOrder?.quotations?.length && renderClientRequest()}
+
+      {/* 3. Orçamento - quando existe */}
       {activeOrder?.quotations?.length > 0 && renderCurrentQuotation()}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhes do Serviço</CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* 4. Informações do Serviço */}
+      {renderServiceInfo()}
+    </>
+  );
+
+  const renderClientRequest = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Solicitação do Cliente</CardTitle>
+        <ClientRequestBadge>
+          <Ionicons name="person-outline" size={16} color="#2563eb" />
+          <ClientRequestBadgeText>
+            {activeOrder?.client?.name || "Cliente"}
+          </ClientRequestBadgeText>
+        </ClientRequestBadge>
+      </CardHeader>
+      <CardContent>
+        <ClientRequestGrid>
+          <ClientRequestItem>
+            <ClientRequestIcon>
+              <Ionicons name="calendar-outline" size={18} color="#2563eb" />
+            </ClientRequestIcon>
+            <ClientRequestContent>
+              <ClientRequestLabel>Data solicitada</ClientRequestLabel>
+              <ClientRequestValue>
+                {formatDate(activeOrder?.scheduledDate)}
+              </ClientRequestValue>
+            </ClientRequestContent>
+          </ClientRequestItem>
+
+          <ClientRequestItem>
+            <ClientRequestIcon>
+              <Ionicons name="time-outline" size={18} color="#2563eb" />
+            </ClientRequestIcon>
+            <ClientRequestContent>
+              <ClientRequestLabel>Período</ClientRequestLabel>
+              <ClientRequestValue>
+                {activeOrder?.period === "morning"
+                  ? "Manhã"
+                  : activeOrder?.period === "afternoon"
+                  ? "Tarde"
+                  : "Noite"}
+              </ClientRequestValue>
+            </ClientRequestContent>
+          </ClientRequestItem>
+
+          {activeOrder?.address && (
+            <ClientRequestItem>
+              <ClientRequestIcon>
+                <Ionicons name="location-outline" size={18} color="#2563eb" />
+              </ClientRequestIcon>
+              <ClientRequestContent>
+                <ClientRequestLabel>Local do serviço</ClientRequestLabel>
+                <ClientRequestValue>{activeOrder?.address}</ClientRequestValue>
+              </ClientRequestContent>
+            </ClientRequestItem>
+          )}
+
+          {/*<ClientRequestItem>
+            <ClientRequestIcon>
+              <Ionicons name="cash-outline" size={18} color="#2563eb" />
+            </ClientRequestIcon>
+            <ClientRequestContent>
+              {/*<ClientRequestLabel>Orçamento inicial</ClientRequestLabel>
+              <ClientRequestValue>
+                R$ {activeOrder?.initialPrice?.toFixed(2) || "Não informado"}
+              </ClientRequestValue>
+            </ClientRequestContent>
+          </ClientRequestItem>*/}
+        </ClientRequestGrid>
+
+        {activeOrder?.description && (
+          <ClientRequestNote>
+            <ClientRequestNoteHeader>
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={16}
+                color="#2563eb"
+              />
+              <ClientRequestNoteTitle>
+                Observações do cliente
+              </ClientRequestNoteTitle>
+            </ClientRequestNoteHeader>
+            <ClientRequestNoteText>
+              {activeOrder?.description}
+            </ClientRequestNoteText>
+          </ClientRequestNote>
+        )}
+
+        <ClientRequestFooter>
+          <ClientRequestDate>
+            Solicitado em {formatDateTime(activeOrder?.createdAt)}
+          </ClientRequestDate>
+        </ClientRequestFooter>
+      </CardContent>
+    </Card>
+  );
+
+  const renderServiceInfo = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Informações do Serviço</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ServiceHeaderSection>
           <ServiceImageContainer>
             <ServiceImage
               source={{
@@ -707,62 +912,79 @@ const PedidoDetalhes = ({ route }) => {
               }}
             />
           </ServiceImageContainer>
-
-          <ServiceInfo>
+          <ServiceHeaderInfo>
             <ServiceTitle>{activeOrder?.service?.title}</ServiceTitle>
             <CategoryBadge>
               <CategoryText>{activeOrder?.service?.category}</CategoryText>
             </CategoryBadge>
-          </ServiceInfo>
+          </ServiceHeaderInfo>
+        </ServiceHeaderSection>
 
-          <DetailRow>
-            <DetailLabel>Data Agendada</DetailLabel>
-            <DetailValue>{formatDate(activeOrder?.scheduledDate)}</DetailValue>
-          </DetailRow>
-
-          <DetailRow>
-            <DetailLabel>Período</DetailLabel>
-            <DetailValue>
-              {activeOrder?.period === "morning"
-                ? "Manhã"
-                : activeOrder?.period === "afternoon"
-                ? "Tarde"
-                : "Noite"}
-            </DetailValue>
-          </DetailRow>
-
+        <ServiceDetailsGrid>
           {activeOrder?.address && (
-            <DetailRow>
-              <DetailLabel>Endereço</DetailLabel>
-              <AddressContainer>
-                <LocationIcon>
-                  <Ionicons
-                    name="location-outline"
-                    size={16}
-                    color={theme.colors.primary}
-                  />
-                </LocationIcon>
-                <AddressText>{activeOrder?.address}</AddressText>
-              </AddressContainer>
-            </DetailRow>
+            <ServiceDetailItem>
+              <ServiceDetailIcon>
+                <Ionicons
+                  name="location"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </ServiceDetailIcon>
+              <ServiceDetailContent>
+                <ServiceDetailLabel>Local</ServiceDetailLabel>
+                <ServiceDetailValue>{activeOrder?.address}</ServiceDetailValue>
+              </ServiceDetailContent>
+            </ServiceDetailItem>
           )}
 
-          <DetailRow last>
-            <DetailLabel>Data da Solicitação</DetailLabel>
-            <DetailValue>{formatDateTime(activeOrder?.createdAt)}</DetailValue>
-          </DetailRow>
+          <ServiceDetailItem>
+            <ServiceDetailIcon>
+              <Ionicons name="person" size={20} color={theme.colors.primary} />
+            </ServiceDetailIcon>
+            <ServiceDetailContent>
+              <ServiceDetailLabel>Solicitado por</ServiceDetailLabel>
+              <ServiceDetailValue>
+                {activeOrder?.client?.name || "Cliente"}
+              </ServiceDetailValue>
+            </ServiceDetailContent>
+          </ServiceDetailItem>
 
-          {activeOrder?.description && (
-            <QuotationDescription>
-              <DetailLabel style={{ marginBottom: 8 }}>
+          <ServiceDetailItem>
+            <ServiceDetailIcon>
+              <Ionicons
+                name="calendar-clear"
+                size={20}
+                color={theme.colors.primary}
+              />
+            </ServiceDetailIcon>
+            <ServiceDetailContent>
+              <ServiceDetailLabel>Data da solicitação</ServiceDetailLabel>
+              <ServiceDetailValue>
+                {formatDateTime(activeOrder?.createdAt)}
+              </ServiceDetailValue>
+            </ServiceDetailContent>
+          </ServiceDetailItem>
+        </ServiceDetailsGrid>
+
+        {activeOrder?.description && (
+          <ClientObservationsCard>
+            <ClientObservationsHeader>
+              <Ionicons
+                name="chatbubble-ellipses"
+                size={18}
+                color={theme.colors.primary}
+              />
+              <ClientObservationsTitle>
                 Observações do Cliente
-              </DetailLabel>
+              </ClientObservationsTitle>
+            </ClientObservationsHeader>
+            <ClientObservationsText>
               {activeOrder?.description}
-            </QuotationDescription>
-          )}
-        </CardContent>
-      </Card>
-    </>
+            </ClientObservationsText>
+          </ClientObservationsCard>
+        )}
+      </CardContent>
+    </Card>
   );
 
   const renderHeader = () => (
@@ -837,6 +1059,23 @@ const PedidoDetalhes = ({ route }) => {
       );
     }
 
+    if (
+      isProvider &&
+      (activeOrder?.status === "PAYMENT_PENDING" ||
+        activeOrder?.status === "CLIENT_CONFIRMED")
+    ) {
+      return (
+        <StickyFooter>
+          <ActionButton variant="primary" onPress={handleConfirmPayment}>
+            <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
+            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
+              Confirmar Recebimento
+            </ActionButtonText>
+          </ActionButton>
+        </StickyFooter>
+      );
+    }
+
     if (!isProvider && activeOrder?.status === "QUOTE_ACCEPTED") {
       return (
         <StickyFooter>
@@ -844,6 +1083,27 @@ const PedidoDetalhes = ({ route }) => {
             <Ionicons name="card-outline" size={20} color="#fff" />
             <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
               Realizar Pagamento
+            </ActionButtonText>
+          </ActionButton>
+        </StickyFooter>
+      );
+    }
+
+    if (!isProvider && activeOrder?.status === "PAID") {
+      return (
+        <StickyFooter>
+          <ActionButton
+            variant="primary"
+            onPress={() =>
+              navigation.navigate("ServicoDetalhes", {
+                id: activeOrder.service.id,
+                orderId: activeOrder.id, // Para saber que vem de um pedido concluído
+              })
+            }
+          >
+            <Ionicons name="star-outline" size={20} color="#fff" />
+            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
+              ⭐ Avaliar Serviço
             </ActionButtonText>
           </ActionButton>
         </StickyFooter>

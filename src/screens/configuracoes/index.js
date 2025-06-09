@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/authContext";
+import { useTutorial } from "../../contexts/tutorialContext";
 import {
   Container,
   ScrollView,
@@ -16,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 const Configuracoes = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { resetTutorials } = useTutorial();
 
   return (
     <Container>
@@ -84,6 +86,12 @@ const Configuracoes = () => {
             <Ionicons name="chevron-forward" size={24} color="#666" />
           </MenuItem>
         </Section>
+
+        {/* Resetar Tutoriais */}
+        <MenuItem onPress={() => resetTutorials()}>
+          <Ionicons name="refresh-outline" size={24} color="#666" />
+          <MenuItemText>Resetar Tutoriais</MenuItemText>
+        </MenuItem>
 
         {/* Versão do App */}
         <VersionInfo>

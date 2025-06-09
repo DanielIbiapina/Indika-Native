@@ -47,7 +47,7 @@ import {
 } from "./styles";
 import ListaDeChats from "../../components/listaDeChats";
 import TelaChat from "../../components/telaChat";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { orderService } from "../../services/orderService";
 import { ORDER_STATUS } from "../../constants/orderStatus";
 import generateWelcomeMessage from "../../utils/generateWelcomeMessage";
@@ -56,6 +56,7 @@ const MESSAGES_PER_PAGE = 30;
 
 const Mensagens = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { user } = useAuth();
 
   const [chats, setChats] = useState([]);
@@ -78,7 +79,6 @@ const Mensagens = () => {
     try {
       if (showLoader) setLoading(true);
       const response = await chatService.getChats();
-      console.log(response);
 
       // Se tiver um chat selecionado, preserva seus dados
       if (selectedChat) {
@@ -215,12 +215,12 @@ const Mensagens = () => {
   // Função para selecionar um chat
   const handleSelectChat = async (chat) => {
     console.log("handleSelectChat");
+    console.log("selectedChat", chat);
     try {
       if (!chat || !chat.id) {
         console.error("Chat inválido para seleção");
         return;
       }
-      console.log(chat);
 
       // Garantir que o chat tenha as propriedades necessárias
       const chatWithDefaults = {
@@ -233,7 +233,14 @@ const Mensagens = () => {
 
       // Atualiza o chat selecionado
       setSelectedChat(chatWithDefaults);
-      setNameChat(chatWithDefaults.participants[0]?.name || "Usuário");
+
+      // Melhor tratamento do nome do participante
+      const participantName =
+        chatWithDefaults.participants[0]?.name ||
+        chatWithDefaults.participants[0]?.username ||
+        "Usuário";
+      setNameChat(participantName);
+
       setMessages([]); // Limpa as mensagens antes de carregar novas
       setPage(1);
       setHasMore(true);
@@ -252,7 +259,6 @@ const Mensagens = () => {
       );
     } catch (error) {
       console.error("Erro ao selecionar chat:", error);
-      Alert.alert("Erro", "Não foi possível carregar o chat");
     }
   };
 
@@ -341,42 +347,18 @@ const Mensagens = () => {
   // Adicione este useEffect para atualizar o título e as opções do header
   useEffect(() => {
     if (selectedChat) {
+      console.log("selectedChat");
+      console.log(selectedChat);
+      console.log("selectedChat");
+      const participantName =
+        selectedChat.participants[0]?.name ||
+        selectedChat.participants[0]?.username ||
+        nameChat ||
+        "Usuário";
+
       navigation.setOptions({
-        headerTitle: selectedChat.participants[0]?.name || "Usuário",
-        headerRight: () => (
-          <TouchableOpacity
-            style={{ marginRight: 16 }}
-            onPress={() => {
-              if (selectedChat.orders?.length > 0) {
-                // Se tiver mais de um pedido, mostra modal de seleção
-                if (selectedChat.orders.length > 1) {
-                  Alert.alert(
-                    "Selecionar Pedido",
-                    "Escolha qual pedido deseja visualizar:",
-                    selectedChat.orders.map((order) => ({
-                      text: `Pedido #${order.id} - ${
-                        order.service?.title || "Serviço"
-                      }`,
-                      onPress: () =>
-                        navigation.navigate("PedidoDetalhes", {
-                          orderId: order.id,
-                        }),
-                    }))
-                  );
-                } else {
-                  // Se tiver apenas um pedido, navega direto
-                  navigation.navigate("PedidoDetalhes", {
-                    orderId: selectedChat.orders[0].id,
-                  });
-                }
-              } else {
-                Alert.alert("Aviso", "Não há pedidos associados a este chat");
-              }
-            }}
-          >
-            <Ionicons name="document-text-outline" size={24} color="#422680" />
-          </TouchableOpacity>
-        ),
+        headerTitle: participantName,
+        headerRight: null,
       });
     } else {
       navigation.setOptions({
@@ -384,7 +366,7 @@ const Mensagens = () => {
         headerRight: null,
       });
     }
-  }, [selectedChat, navigation]);
+  }, [selectedChat, navigation, nameChat]);
 
   // Adicione esta função para criar/obter chat
   const handleCreateChat = async (providerId) => {
@@ -623,6 +605,67 @@ const Mensagens = () => {
     // Recarregar as mensagens
     await loadMessages();
   };
+
+  // Adicionar useEffect para lidar com parâmetros de navegação
+  useEffect(() => {
+    const handleNavigationParams = async () => {
+      const { chatId, providerId, orderId, showOrderDetails, order } =
+        route.params || {};
+
+      if (chatId) {
+        try {
+          // Carregar os chats primeiro
+          await loadChats(false);
+
+          // Buscar o chat específico ou criar um mock com os dados do prestador
+          let targetChat = chats.find((chat) => chat.id === chatId);
+
+          if (!targetChat) {
+            // Se não encontrou o chat na lista, criar um objeto temporário
+            // com os dados necessários
+            targetChat = {
+              id: chatId,
+              participants: [
+                {
+                  name: order?.service?.provider?.name || "Prestador",
+                  username: order?.service?.provider?.username || "prestador",
+                  avatar: order?.service?.provider?.avatar || null,
+                },
+              ],
+              orders: order ? [order] : [],
+              currentOrderId: orderId,
+              lastMessage: null,
+              unreadCount: 0,
+            };
+          } else if (
+            targetChat.participants.length === 0 &&
+            order?.service?.provider
+          ) {
+            // Se o chat existe mas não tem participants, adicionar do order
+            targetChat = {
+              ...targetChat,
+              participants: [
+                {
+                  name: order.service.provider.name,
+                  username: order.service.provider.username,
+                  avatar: order.service.provider.avatar,
+                },
+              ],
+            };
+          }
+
+          // Selecionar o chat
+          await handleSelectChat(targetChat);
+        } catch (error) {
+          console.error("Erro ao processar parâmetros de navegação:", error);
+        }
+      }
+    };
+
+    if (route.params) {
+      handleNavigationParams();
+    }
+  }, [route.params]);
 
   if (loading) {
     return (

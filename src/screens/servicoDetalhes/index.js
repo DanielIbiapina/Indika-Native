@@ -71,6 +71,7 @@ import { chatService } from "../../services/chatService";
 import { messageService } from "../../services/messageService";
 import { generateQuotationMessage } from "../../utils/generateQuotationMessage";
 import generateWelcomeMessage from "../../utils/generateWelcomeMessage";
+import { MESSAGE_TYPES } from "../../constants/orderStatus";
 
 const PERIODS = {
   MORNING: "morning",
@@ -340,19 +341,34 @@ const ServicoDetalhes = () => {
 
   const sendInitialMessages = async (chatId, order) => {
     try {
-      const welcomeMessage = generateWelcomeMessage(service.provider.name);
-      const quotationMessage = generateQuotationMessage(order, service);
+      const welcomeMessage = generateWelcomeMessage(
+        service.provider.name,
+        user.id
+      );
+      const quotationMessage = generateQuotationMessage(
+        order,
+        service,
+        MESSAGE_TYPES.REQUEST,
+        user.id
+      );
 
-      await Promise.all([
-        messageService.sendMessage(chatId, welcomeMessage),
-        messageService.sendMessage(chatId, quotationMessage),
-        bookingData.description?.trim()
-          ? messageService.sendMessage(chatId, {
-              type: "text",
-              content: bookingData.description,
-            })
-          : Promise.resolve(),
-      ]);
+      // Enviar mensagens em sequência para garantir ordem correta
+      await messageService.sendMessage(chatId, welcomeMessage);
+
+      // Pequeno delay para garantir ordem
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await messageService.sendMessage(chatId, quotationMessage);
+
+      // Se houver descrição adicional, enviar como mensagem de texto do cliente
+      if (bookingData.description?.trim()) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await messageService.sendMessage(chatId, {
+          type: "text",
+          content: bookingData.description,
+          senderId: user.id,
+        });
+      }
     } catch (error) {
       console.error("Erro ao enviar mensagens iniciais:", error);
       // Não bloqueia o fluxo principal se falhar

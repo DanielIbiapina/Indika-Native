@@ -5,6 +5,12 @@ import {
   Alert,
   TouchableWithoutFeedback,
   Image,
+  TouchableOpacity,
+  Text,
+  View,
+  Modal,
+  Dimensions,
+  RefreshControl,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import {
@@ -44,6 +50,20 @@ import {
   LoadMoreButton,
   LoadMoreButtonText,
   LoaderContainer,
+  FriendRequestsSection,
+  SectionHeader,
+  SectionTitle,
+  Badge,
+  BadgeText,
+  RequestCard,
+  RequestAvatar,
+  RequestInfo,
+  RequestName,
+  RequestMessage,
+  RequestActions,
+  AcceptButton,
+  RejectButton,
+  ActionButtonText,
 } from "./styles";
 import EditProfileModal from "../../components/editProfileModal";
 import ServiceManageCard from "../../components/serviceManageCard";
@@ -53,6 +73,9 @@ import { reviewService } from "../../services/reviewService";
 import ReviewCard from "../../components/reviewCard";
 import { ORDER_STATUS_LABELS } from "../../constants/orderStatus";
 import { useOrder } from "../../contexts/orderContext";
+import { paymentService } from "../../services/paymentService";
+import { useTutorial } from "../../contexts/tutorialContext";
+import { friendshipService } from "../../services/friendshipService";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -68,11 +91,14 @@ const TAB_LABELS = {
   [TABS.REVIEWS]: "Avaliações",
 };
 
+const { width: screenWidth } = Dimensions.get("window");
+
 const Profile = () => {
   const navigation = useNavigation();
   const { user, logout } = useAuth();
   const { orderList, loadOrders } = useOrder();
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(TABS.RECEIVED_ORDERS);
   const [profileData, setProfileData] = useState(null);
   const [receivedOrders, setReceivedOrders] = useState([]);
@@ -86,8 +112,18 @@ const Profile = () => {
     reviews: { page: 1, hasMore: true, loading: false },
   });
 
+  // Tutorial state
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const { startTutorial, endTutorial, shouldShowTutorial, resetTutorials } =
+    useTutorial();
+
+  // Adicionar apenas estes 2 estados após os existentes
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [loadingFriendRequests, setLoadingFriendRequests] = useState(false);
+
   useEffect(() => {
     loadProfileData();
+    loadFriendRequests();
   }, []);
 
   useEffect(() => {
@@ -109,6 +145,52 @@ const Profile = () => {
       loadOrders({ providerId: user.id });
     }
   }, [user]);
+
+  // Iniciar tutorial quando a tela for carregada (apenas para usuários logados)
+  useEffect(() => {
+    if (user) {
+      setTimeout(() => {
+        startTutorial("profile");
+      }, 1000);
+    }
+  }, []);
+
+  // ADICIONAR: Navigation listener para atualizar quando voltar de outras telas
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      // Atualizar apenas se for a aba de solicitações recebidas
+      if (activeTab === TABS.RECEIVED_ORDERS) {
+        loadReceivedOrders();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, activeTab]);
+
+  // ADICIONAR: Pull to refresh function
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadProfileData();
+      await loadFriendRequests();
+
+      switch (activeTab) {
+        case TABS.SERVICES:
+          await loadMyServices();
+          break;
+        case TABS.RECEIVED_ORDERS:
+          await loadReceivedOrders();
+          break;
+        case TABS.REVIEWS:
+          await loadReviews();
+          break;
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const loadProfileData = async () => {
     try {
@@ -339,6 +421,249 @@ const Profile = () => {
     actions[action]?.();
   };
 
+  const handleCreateService = async () => {
+    try {
+      // Buscar informações de assinatura diretamente do serviço de pagamento
+      const subscription = await paymentService.getSubscription();
+
+      // Verificar se tem assinatura ativa
+      if (!subscription || subscription.status !== "ACTIVE") {
+        Alert.alert(
+          "Assinatura necessária",
+          "Para criar serviços, você precisa ter uma assinatura ativa.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Ver planos",
+              onPress: () => navigation.navigate("Assinaturas"),
+            },
+          ]
+        );
+      } else {
+        navigation.navigate("CriarServico");
+      }
+    } catch (error) {
+      console.error("Erro ao verificar assinatura:", error);
+
+      // Se der erro, presumimos que não tem assinatura e oferecemos a opção de ver planos
+      Alert.alert(
+        "Verificação de assinatura",
+        "Não foi possível verificar sua assinatura. Você precisa de uma assinatura ativa para criar serviços.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Ver planos",
+            onPress: () => navigation.navigate("Assinaturas"),
+          },
+        ]
+      );
+    }
+  };
+
+  // Tutorial content
+  const tutorialContent = [
+    {
+      title: "Edite seu perfil",
+      message:
+        "Clique aqui para atualizar suas informações pessoais, foto de perfil e dados de contato",
+      icon: "person-circle",
+      targetArea: "edit-profile",
+      imageUrl: "https://cdn-icons-png.flaticon.com/512/1160/1160358.png",
+    },
+    {
+      title: "Solicitações recebidas",
+      message:
+        "Visualize e gerencie as solicitações de serviços que você recebeu dos clientes",
+      icon: "mail-outline",
+      targetArea: "received-orders",
+      imageUrl: "https://cdn-icons-png.flaticon.com/512/2645/2645728.png",
+    },
+    {
+      title: "Meus serviços",
+      message:
+        "Gerencie seus serviços cadastrados e adicione novos serviços a sua oferta",
+      icon: "construct-outline",
+      targetArea: "my-services",
+      imageUrl: "https://cdn-icons-png.flaticon.com/512/2897/2897785.png",
+    },
+    {
+      title: "Avaliações",
+      message:
+        "Veja as avaliações e comentários que você recebeu dos seus clientes",
+      icon: "star-outline",
+      targetArea: "reviews",
+      imageUrl: "https://cdn-icons-png.flaticon.com/512/1484/1484560.png",
+    },
+  ];
+
+  // Função para avançar para o próximo passo do tutorial
+  const handleNextTutorialStep = () => {
+    if (tutorialStep < tutorialContent.length - 1) {
+      setTutorialStep(tutorialStep + 1);
+    } else {
+      // Se for o último passo, finalizar o tutorial
+      endTutorial("profile");
+      setTutorialStep(0);
+    }
+  };
+
+  // Função para pular o tutorial
+  const handleSkipTutorial = () => {
+    endTutorial("profile");
+    setTutorialStep(0);
+  };
+
+  // Botão de desenvolvimento para resetar o tutorial (remover em produção)
+  const handleDevResetTutorial = () => {
+    resetTutorials("profile");
+    setTimeout(() => {
+      startTutorial("profile");
+    }, 500);
+  };
+
+  // Renderizar o tutorial
+  const renderTutorial = () => {
+    if (!shouldShowTutorial("profile")) return null;
+
+    const currentStep = tutorialContent[tutorialStep];
+
+    return (
+      <Modal
+        transparent={true}
+        visible={true}
+        animationType="fade"
+        onRequestClose={handleSkipTutorial}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#fff",
+              borderRadius: 16,
+              width: screenWidth * 0.85,
+              padding: 20,
+              alignItems: "center",
+              maxHeight: "80%",
+            }}
+          >
+            {/* Número do passo */}
+            <View
+              style={{
+                backgroundColor: "#422680",
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                {tutorialStep + 1}/{tutorialContent.length}
+              </Text>
+            </View>
+
+            {/* Título */}
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "bold",
+                color: "#422680",
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {currentStep.title}
+            </Text>
+
+            {/* Imagem sem seta indicativa */}
+            <View
+              style={{
+                width: "100%",
+                height: 180,
+                backgroundColor: "#f5f5f5",
+                borderRadius: 8,
+                marginVertical: 16,
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              {/* Ícone de fallback */}
+              <Ionicons name={currentStep.icon} size={60} color="#422680" />
+
+              {/* Imagem de URL */}
+              {currentStep.imageUrl && (
+                <Image
+                  source={{ uri: currentStep.imageUrl }}
+                  style={{
+                    position: "absolute",
+                    width: "60%",
+                    height: "60%",
+                    resizeMode: "contain",
+                  }}
+                />
+              )}
+            </View>
+
+            {/* Mensagem */}
+            <Text
+              style={{
+                fontSize: 16,
+                color: "#333",
+                marginBottom: 24,
+                textAlign: "center",
+                lineHeight: 24,
+              }}
+            >
+              {currentStep.message}
+            </Text>
+
+            {/* Botões */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <TouchableOpacity
+                onPress={handleSkipTutorial}
+                style={{
+                  padding: 12,
+                }}
+              >
+                <Text style={{ color: "#999" }}>Pular</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleNextTutorialStep}
+                style={{
+                  backgroundColor: "#422680",
+                  paddingVertical: 12,
+                  paddingHorizontal: 24,
+                  borderRadius: 8,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  {tutorialStep === tutorialContent.length - 1
+                    ? "Concluir"
+                    : "Próximo"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   const renderAvatar = () => (
     <AvatarContainer>
       <Image
@@ -372,6 +697,47 @@ const Profile = () => {
     </Stats>
   );
 
+  const renderFriendRequestsSection = () => {
+    if (friendRequests.length === 0) return null;
+
+    return (
+      <FriendRequestsSection>
+        <SectionHeader>
+          <SectionTitle>Solicitações de Amizade</SectionTitle>
+          <Badge>
+            <BadgeText>{friendRequests.length}</BadgeText>
+          </Badge>
+        </SectionHeader>
+
+        {friendRequests.map((request) => (
+          <RequestCard key={request.id}>
+            <RequestAvatar source={{ uri: request.requester.avatar }} />
+            <RequestInfo>
+              <RequestName>{request.requester.name}</RequestName>
+              {request.message && (
+                <RequestMessage>"{request.message}"</RequestMessage>
+              )}
+            </RequestInfo>
+            <RequestActions>
+              <AcceptButton
+                onPress={() => handleAcceptFriendRequest(request.id)}
+              >
+                <Ionicons name="checkmark" size={16} color="#fff" />
+                <ActionButtonText>Aceitar</ActionButtonText>
+              </AcceptButton>
+              <RejectButton
+                onPress={() => handleRejectFriendRequest(request.id)}
+              >
+                <Ionicons name="close" size={16} color="#fff" />
+                <ActionButtonText>Rejeitar</ActionButtonText>
+              </RejectButton>
+            </RequestActions>
+          </RequestCard>
+        ))}
+      </FriendRequestsSection>
+    );
+  };
+
   const renderTabContent = () => {
     const content = {
       [TABS.RECEIVED_ORDERS]: (
@@ -389,6 +755,9 @@ const Profile = () => {
                 }
                 onStatusUpdate={handleStatusUpdate}
                 showOrderDetails={false}
+                isProvider={true}
+                user={user}
+                navigation={navigation}
                 testID={`order-${order.id}`}
               />
             ))
@@ -410,10 +779,7 @@ const Profile = () => {
       ),
       [TABS.SERVICES]: (
         <>
-          <Button
-            onPress={() => navigation.navigate("CriarServico")}
-            testID="create-service-button"
-          >
+          <Button onPress={handleCreateService} testID="create-service-button">
             <Ionicons name="add" size={20} color="#fff" />
             <ButtonText>Criar Novo Serviço</ButtonText>
           </Button>
@@ -519,6 +885,14 @@ const Profile = () => {
         <MenuItemText>Pagamentos</MenuItemText>
       </MenuItem>
 
+      <MenuItem
+        onPress={() => navigation.navigate("Assinaturas")}
+        testID="subscriptions-button"
+      >
+        <Ionicons name="card-outline" size={24} color="#666" />
+        <MenuItemText>Minha Assinatura</MenuItemText>
+      </MenuItem>
+
       <Divider />
 
       <MenuItem onPress={logout} testID="logout-button">
@@ -527,6 +901,53 @@ const Profile = () => {
       </MenuItem>
     </MenuSection>
   );
+
+  const loadFriendRequests = async () => {
+    try {
+      setLoadingFriendRequests(true);
+      const requests = await friendshipService.getPendingRequests();
+      setFriendRequests(requests.received || []);
+    } catch (err) {
+      console.error("Erro ao carregar solicitações de amizade:", err);
+    } finally {
+      setLoadingFriendRequests(false);
+    }
+  };
+
+  const handleAcceptFriendRequest = async (requestId) => {
+    try {
+      await friendshipService.acceptFriendRequest(requestId);
+      setFriendRequests((prev) => prev.filter((req) => req.id !== requestId));
+      Alert.alert("Sucesso", "Solicitação aceita! Agora vocês são amigos.");
+    } catch (error) {
+      Alert.alert("Erro", error.message);
+    }
+  };
+
+  const handleRejectFriendRequest = async (requestId) => {
+    Alert.alert(
+      "Rejeitar solicitação",
+      "Tem certeza que deseja rejeitar esta solicitação?",
+      [
+        { text: "Cancelar" },
+        {
+          text: "Rejeitar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await friendshipService.rejectFriendRequest(requestId);
+              setFriendRequests((prev) =>
+                prev.filter((req) => req.id !== requestId)
+              );
+              Alert.alert("Solicitação rejeitada");
+            } catch (error) {
+              Alert.alert("Erro", error.message);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (loading) {
     return (
@@ -549,6 +970,9 @@ const Profile = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         testID="profile-scroll-view"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <ProfileHeader>
           {renderAvatar()}
@@ -566,6 +990,8 @@ const Profile = () => {
         </ProfileHeader>
 
         {renderStats()}
+
+        {renderFriendRequestsSection()}
 
         <TabsContainer>
           {Object.entries(TAB_LABELS).map(([key, label]) => (
@@ -591,7 +1017,27 @@ const Profile = () => {
             onClose={() => setIsEditing(false)}
           />
         )}
+
+        {/* Botão DEV para resetar tutorial - Remover em produção */}
+        {__DEV__ && (
+          <TouchableOpacity
+            onPress={handleDevResetTutorial}
+            style={{
+              marginTop: 20,
+              marginBottom: 20,
+              padding: 10,
+              backgroundColor: "#eee",
+              borderRadius: 8,
+              alignSelf: "center",
+            }}
+          >
+            <Text style={{ color: "#666" }}>Reset Tutorial (DEV)</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      {/* Renderizar o tutorial */}
+      {renderTutorial()}
     </Container>
   );
 };

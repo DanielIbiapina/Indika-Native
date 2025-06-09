@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MessageItem from "../messageItem";
 import {
@@ -55,6 +55,7 @@ const TelaChat = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState(null);
   const [isProvider, setIsProvider] = useState(false);
+  const [orderData, setOrderData] = useState(null);
   const navigation = useNavigation();
 
   //console.log("messages", messages);
@@ -81,16 +82,72 @@ const TelaChat = ({
     }
 
     // Se não encontrou nas mensagens, usa o pedido mais recente
-    return selectedChat.orders[0]?.id;
+    return selectedChat.orders[0]?.id || selectedChat.currentOrderId;
   }, [messages, selectedChat]);
 
-  // Atualiza o orderId atual quando as mensagens mudarem
+  // Função para carregar dados do pedido
+  const loadOrderData = useCallback(
+    async (orderIdToLoad) => {
+      if (!orderIdToLoad) return;
+
+      try {
+        console.log("Carregando dados do pedido:", orderIdToLoad);
+        const orderDetails = await orderService.getOrder(orderIdToLoad);
+        console.log("Dados do pedido carregados:", orderDetails);
+
+        setOrderData(orderDetails);
+        setIsProvider(orderDetails.providerId === userId);
+
+        console.log("É prestador?", orderDetails.providerId === userId);
+        console.log("Provider ID:", orderDetails.providerId);
+        console.log("User ID:", userId);
+      } catch (error) {
+        console.error("Erro ao carregar dados do pedido:", error);
+      }
+    },
+    [userId]
+  );
+
+  // useEffect para identificar e carregar o pedido atual
   useEffect(() => {
     const newOrderId = identifyCurrentOrder();
-    if (newOrderId) {
+    console.log("Order ID identificado:", newOrderId);
+
+    if (newOrderId && newOrderId !== currentOrderId) {
       setCurrentOrderId(newOrderId);
+      loadOrderData(newOrderId);
     }
-  }, [messages, identifyCurrentOrder]);
+  }, [
+    messages,
+    selectedChat,
+    identifyCurrentOrder,
+    currentOrderId,
+    loadOrderData,
+  ]);
+
+  // useEffect adicional para quando o orderId vem diretamente como prop
+  useEffect(() => {
+    if (orderId && orderId !== currentOrderId) {
+      console.log("Usando orderId da prop:", orderId);
+      setCurrentOrderId(orderId);
+      loadOrderData(orderId);
+    }
+  }, [orderId, currentOrderId, loadOrderData]);
+
+  // useEffect para quando selectedChat tem currentOrderId
+  useEffect(() => {
+    if (
+      selectedChat?.currentOrderId &&
+      selectedChat.currentOrderId !== currentOrderId
+    ) {
+      console.log(
+        "Usando currentOrderId do selectedChat:",
+        selectedChat.currentOrderId
+      );
+      setCurrentOrderId(selectedChat.currentOrderId);
+      loadOrderData(selectedChat.currentOrderId);
+    }
+  }, [selectedChat?.currentOrderId, currentOrderId, loadOrderData]);
 
   // Verifica se deve mostrar o tooltip
   useEffect(() => {
@@ -223,6 +280,60 @@ const TelaChat = ({
         new Date(messages[index + 1]?.createdAt)
       );
 
+    // Renderização especial para mensagem de sistema
+    if (item.type === "system") {
+      return (
+        <>
+          {showDateSeparator && (
+            <DateSeparator>
+              <DateSeparatorText>
+                {format(new Date(item.createdAt), "dd 'de' MMMM", {
+                  locale: ptBR,
+                })}
+              </DateSeparatorText>
+            </DateSeparator>
+          )}
+          <View
+            style={{
+              alignItems: "center",
+              marginVertical: 16,
+              paddingHorizontal: 16,
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: "#e8f4fd",
+                borderRadius: 16,
+                padding: 16,
+                maxWidth: "85%",
+                borderWidth: 1,
+                borderColor: "#b3d9f7",
+                elevation: 1,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#2c5282",
+                  textAlign: "center",
+                  fontSize: 14,
+                  lineHeight: 22,
+                  fontStyle: "italic",
+                }}
+              >
+                {typeof item.content === "string"
+                  ? item.content
+                  : item.content.text}
+              </Text>
+            </View>
+          </View>
+        </>
+      );
+    }
+
     return (
       <>
         {showDateSeparator && (
@@ -243,6 +354,8 @@ const TelaChat = ({
             onReject={() => handleQuotationAction("reject", item)}
             orderId={currentOrderId}
             userId={userId}
+            isOwn={item.senderId === userId}
+            orderData={orderData}
           />
         ) : (
           <MessageItem

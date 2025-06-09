@@ -42,17 +42,49 @@ export const UserName = styled.Text`
   margin-bottom: 12px;
 `;
 
+export const ActionButtonsContainer = styled.View`
+  flex-direction: row;
+  gap: 8px;
+`;
+
+export const ConnectButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: ${({ style, theme }) => {
+    switch (style) {
+      case "success":
+        return theme.colors.success || "#28a745";
+      case "secondary":
+        return "#6c757d";
+      case "primary":
+      default:
+        return theme.colors.primary;
+    }
+  }};
+  border-radius: 8px;
+  ${({ disabled }) => disabled && `opacity: 0.6;`}
+`;
+
+export const ConnectButtonText = styled.Text`
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+`;
+
 export const MessageButton = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
-  padding: 8px 16px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: ${({ theme }) => theme.colors.secondary || "#6c757d"};
   border-radius: 8px;
 `;
 
 export const MessageButtonText = styled.Text`
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 `;
 

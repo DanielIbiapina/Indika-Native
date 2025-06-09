@@ -176,4 +176,195 @@ export const paymentService = {
   processPayment: async (orderId) => {
     return api.post(`/payments/process/${orderId}`);
   },*/
+
+  // Novo método para pagamentos diretos
+  createDirectPayment: async (data) => {
+    try {
+      const response = await api.post("/payments/direct", {
+        orderId: data.orderId,
+        amount: data.amount,
+        paymentMethod: data.paymentMethod,
+        providerId: data.providerId,
+      });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Método para cliente confirmar que realizou pagamento
+  clientConfirmPayment: async (paymentId) => {
+    try {
+      const response = await api.post(`/payments/${paymentId}/client-confirm`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Prestador confirma recebimento do pagamento direto
+  confirmDirectPayment: async (paymentId) => {
+    try {
+      const response = await api.post(
+        `/payments/${paymentId}/provider-confirm`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao confirmar recebimento:", error);
+      throw error;
+    }
+  },
+
+  // Método para buscar assinatura ativa
+  getSubscription: async () => {
+    try {
+      const response = await api.get("/payments/subscription");
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Método para criar uma nova assinatura
+  createSubscription: async (planData) => {
+    try {
+      const response = await api.post("/payments/subscription", planData);
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Criar preferência para assinatura no Mercado Pago
+  createSubscriptionPreference: async (data) => {
+    try {
+      // Validar dados obrigatórios
+      if (!data.planType || !data.price || !data.description) {
+        throw new Error("Dados incompletos: todos os campos são obrigatórios");
+      }
+
+      const response = await api.post("/payments/subscription/preference", {
+        planType: data.planType,
+        price: Number(data.price),
+        description: data.description,
+      });
+
+      return response;
+    } catch (error) {
+      console.error("Erro ao criar preferência de assinatura:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        data: data,
+      });
+
+      if (error.response?.status === 400) {
+        throw new Error(error.response.data.message || "Dados incompletos");
+      }
+      throw error;
+    }
+  },
+
+  // Monitorar status da assinatura
+  monitorSubscriptionStatus: async (subscriptionId, onStatusChange) => {
+    let attempts = 0;
+    const maxAttempts = 10;
+    const interval = 3000; // 3 segundos
+
+    const checkStatus = async () => {
+      try {
+        const status = await paymentService.getSubscription();
+
+        if (
+          status &&
+          (status.status === "ACTIVE" || status.status === "APPROVED")
+        ) {
+          onStatusChange(status);
+          return true;
+        }
+
+        if (
+          status &&
+          (status.status === "CANCELLED" || status.status === "REJECTED")
+        ) {
+          onStatusChange(status);
+          return true;
+        }
+
+        return false;
+      } catch (error) {
+        console.error("Erro ao monitorar status da assinatura:", error);
+        return false;
+      }
+    };
+
+    return new Promise((resolve) => {
+      const intervalId = setInterval(async () => {
+        attempts++;
+
+        const shouldStop = await checkStatus();
+        if (shouldStop || attempts >= maxAttempts) {
+          clearInterval(intervalId);
+          resolve();
+        }
+      }, interval);
+    });
+  },
+
+  // Método para criar assinatura de teste (sem processamento de pagamento)
+  createTestSubscription: async (planData) => {
+    try {
+      const response = await api.post("/payments/subscription/test", {
+        planType: planData.planType,
+        price: planData.price,
+      });
+      return response.data;
+    } catch (error) {
+      handleApiError(error);
+    }
+  },
+
+  // Buscar método de pagamento configurado
+  getPaymentMethod: async () => {
+    try {
+      const response = await api.get("/payments/payment-methods");
+      return response;
+    } catch (error) {
+      console.error("Erro ao buscar método de pagamento:", error);
+      throw error;
+    }
+  },
+
+  // Adicionar novo método para buscar do prestador
+  getProviderPaymentMethods: async (providerId) => {
+    try {
+      const response = await api.get(`/payments/payment-methods/${providerId}`);
+      return response;
+    } catch (error) {
+      console.error("Erro ao buscar métodos do prestador:", error);
+      throw error;
+    }
+  },
+
+  // Configurar método de pagamento
+  setupPaymentMethod: async (paymentMethods) => {
+    try {
+      console.log(paymentMethods);
+      const response = await api.post("/payments/payment-methods", {
+        paymentMethods,
+      });
+      return response;
+    } catch (error) {
+      console.error("Erro ao configurar método de pagamento:", error);
+      throw error;
+    }
+  },
+};
+
+const handleApiError = (error) => {
+  console.error("Erro na API:", error);
+  if (error.response?.data?.message) {
+    throw new Error(error.response.data.message);
+  }
+  throw error;
 };

@@ -71,6 +71,28 @@ export const userService = {
     }
   },
 
+  // Buscar usuário por telefone
+  searchByPhone: async (phone) => {
+    try {
+      // Remove caracteres não numéricos do telefone
+      const cleanPhone = phone.replace(/\D/g, "");
+
+      console.log("Buscando usuário por telefone:", cleanPhone);
+      const response = await api.get(`/users/search/phone/${cleanPhone}`);
+      console.log("Resposta da busca por telefone:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Erro na busca por telefone:", error.response || error);
+
+      // Se for 404, não encontrou o usuário
+      if (error.response?.status === 404) {
+        return null;
+      }
+
+      throw handleError(error, "Erro ao buscar usuário por telefone");
+    }
+  },
+
   // Obter serviços de um usuário específico
 };
 

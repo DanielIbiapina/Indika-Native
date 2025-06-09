@@ -55,25 +55,69 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, cpf) => {
+  // Função para criar comunidade de amigos
+  const createFriendsCommunity = async (userName) => {
+    try {
+      const formData = new FormData();
+
+      formData.append("name", `Amigos do ${userName.split(" ")[0]}`); // Usar só o primeiro nome
+      formData.append(
+        "description",
+        `Comunidade de amigos pessoais do ${
+          userName.split(" ")[0]
+        }. Aqui estão as pessoas que você conhece e confia.`
+      );
+      formData.append("isPrivate", "true"); // Comunidade privada
+      formData.append("categories", JSON.stringify(["friends"])); // Categoria especial
+
+      const response = await api.post("/communities", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      console.log("Comunidade de amigos criada:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao criar comunidade de amigos:", error);
+      // Não vamos falhar o registro por causa disso
+      return null;
+    }
+  };
+
+  const register = async (
+    name,
+    email,
+    password,
+    cpf,
+    phone,
+    verifiedPhoneToken
+  ) => {
     try {
       console.log("Dados enviados para registro:", {
         name,
         email,
         password,
         cpf,
+        phone,
+        verifiedPhoneToken,
       });
+
+      if (!verifiedPhoneToken && !__DEV__) {
+        return { success: false, error: "Telefone não verificado" };
+      }
 
       const response = await api.post("/auth/register", {
         name,
         email,
         password,
         cpf,
+        phone,
+        verifiedPhoneToken,
       });
 
       console.log("Resposta completa do registro:", response.data);
 
-      // Verificando a estrutura da resposta
       if (!response.data.user || !response.data.token) {
         console.log("Estrutura da resposta inválida:", response.data);
         throw new Error("Resposta do servidor inválida");
@@ -88,6 +132,10 @@ export const AuthProvider = ({ children }) => {
 
       api.defaults.headers.Authorization = `Bearer ${token}`;
       setUser(user);
+
+      // Criar comunidade de amigos automaticamente
+      console.log("Criando comunidade de amigos para:", user.name);
+      await createFriendsCommunity(user.name);
 
       return { success: true };
     } catch (error) {

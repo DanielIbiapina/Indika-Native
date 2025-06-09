@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../contexts/authContext";
 import { linking } from "./linking";
+import { View, ActivityIndicator } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Importar as telas
 import Home from "../screens/home";
@@ -42,227 +44,353 @@ import AllReviews from "../screens/todasAvaliacoes"; // Importar a nova tela
 import PerfilVisitante from "../screens/perfilVisitante"; // Adicionar este import
 import PedidoDetalhes from "../screens/pedidoDetalhes";
 
+// Importar a nova tela de confirmação de pagamento
+import ConfirmarPagamento from "../screens/pagamentos/confirmarPagamento";
+import Assinaturas from "../screens/assinaturas";
+import ProcessarPagamentoAssinatura from "../screens/pagamentos/processarPagamentoAssinatura";
+
+// Importar as novas telas
+import OnBoarding from "../screens/onBoarding";
+import PhoneVerification from "../screens/phoneVerification";
+import CodeVerification from "../screens/codeVerification";
+import CompleteSignup from "../screens/cadastro";
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+const AuthStack = createStackNavigator(); // Nova stack para autenticação
+
+// Navegador de autenticação
+const AuthNavigator = () => {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Entrar" component={Login} />
+      <AuthStack.Screen
+        name="PhoneVerification"
+        component={PhoneVerification}
+      />
+      <AuthStack.Screen name="CodeVerification" component={CodeVerification} />
+      <AuthStack.Screen name="CompleteSignup" component={CompleteSignup} />
+    </AuthStack.Navigator>
+  );
+};
 
 // Navegador principal com Stack
 const MainStack = () => {
+  const { signed } = useAuth();
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
+
+  // Verificar se o usuário já viu o onboarding
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const value = await AsyncStorage.getItem("hasSeenOnboarding");
+        setHasSeenOnboarding(value === "true");
+      } catch (error) {
+        console.error("Erro ao verificar onboarding:", error);
+        setHasSeenOnboarding(false);
+      }
+    };
+
+    checkOnboarding();
+  }, []);
+
+  // Mostrar tela de carregamento enquanto verifica
+  if (hasSeenOnboarding === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#422680" />
+      </View>
+    );
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!hasSeenOnboarding && (
+        <Stack.Screen name="OnBoarding" component={OnBoarding} />
+      )}
+
       <Stack.Screen name="TabNavigator" component={TabNavigator} />
-      <Stack.Screen name="ComunidadeDetalhes" component={ComunidadeDetalhes} />
+      <Stack.Screen
+        name="ComunidadeDetalhes"
+        component={ComunidadeDetalhes}
+        options={{
+          headerShown: true,
+          title: "Detalhes da Comunidade",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
       <Stack.Screen name="ServicoDetalhes" component={ServicoDetalhes} />
       <Stack.Screen
         name="ServicosPorCategoria"
         component={ServicesByCategory}
       />
-      <Stack.Screen name="CriarComunidade" component={CriarComunidade} />
+      <Stack.Screen
+        name="CriarComunidade"
+        component={CriarComunidade}
+        options={{
+          headerShown: true,
+          title: "Criar Comunidade",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
       <Stack.Screen name="CriarServico" component={CriarServico} />
 
-      <Stack.Screen
-        name="ProcessarPagamento"
-        component={ProcessarPagamento}
-        options={{
-          headerShown: true,
-          title: "Realizar Pagamento",
-        }}
-      />
+      <Stack.Screen name="PhoneVerification" component={PhoneVerification} />
+      <Stack.Screen name="CodeVerification" component={CodeVerification} />
+      <Stack.Screen name="CompleteSignup" component={CompleteSignup} />
 
-      <Stack.Screen
-        name="Configuracoes"
-        component={Configuracoes}
-        options={{
-          headerShown: true,
-          title: "Configurações",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="HistoricoPagamento"
-        component={HistoricoPagamento}
-        options={{
-          headerShown: true,
-          title: "Histórico de Pagamentos",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen name="Saques" component={Saques} />
-      <Stack.Screen
-        name="ConfigurarPagamento"
-        component={SetupMetodoPagamento}
-        options={{
-          headerShown: true,
-          title: "Configurar Recebimentos",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
+      {!signed ? (
+        <Stack.Screen name="AuthNavigator" component={AuthNavigator} />
+      ) : (
+        <>
+          <Stack.Screen
+            name="ProcessarPagamento"
+            component={ProcessarPagamento}
+            options={{
+              headerShown: true,
+              title: "Realizar Pagamento",
+            }}
+          />
 
-      <Stack.Screen
-        name="DadosPessoais"
-        component={DadosPessoais}
-        options={{
-          headerShown: true,
-          title: "Dados Pessoais",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Seguranca"
-        component={Seguranca}
-        options={{
-          headerShown: true,
-          title: "Segurança",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Notificacoes"
-        component={Notificacoes}
-        options={{
-          headerShown: true,
-          title: "Notificações",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Idioma"
-        component={Idioma}
-        options={{
-          headerShown: true,
-          title: "Idioma",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="VisibilidadePerfil"
-        component={VisibilidadePerfil}
-        options={{
-          headerShown: true,
-          title: "Visibilidade do Perfil",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Localizacao"
-        component={Localizacao}
-        options={{
-          headerShown: true,
-          title: "Localização",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="CentralAjuda"
-        component={CentralAjuda}
-        options={{
-          headerShown: true,
-          title: "Central de Ajuda",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="TermosUso"
-        component={TermosUso}
-        options={{
-          headerShown: true,
-          title: "Termos de Uso",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="PoliticaPrivacidade"
-        component={PoliticaPrivacidade}
-        options={{
-          headerShown: true,
-          title: "Política de Privacidade",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Mensagens"
-        component={Mensagens}
-        options={{
-          headerShown: true,
-          title: "Mensagens",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="Pagamentos"
-        component={Pagamentos}
-        options={{
-          headerShown: true,
-          title: "Pagamentos",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen name="TodasAvaliacoes" component={AllReviews} />
-      <Stack.Screen
-        name="PerfilVisitante"
-        component={PerfilVisitante}
-        options={{
-          headerShown: true,
-          title: "Perfil",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
-      <Stack.Screen
-        name="PedidoDetalhes"
-        component={PedidoDetalhes}
-        options={{
-          headerShown: true,
-          title: "Detalhes do Pedido",
-          headerTintColor: "#422680",
-          headerStyle: {
-            backgroundColor: "#fff",
-          },
-        }}
-      />
+          <Stack.Screen
+            name="Configuracoes"
+            component={Configuracoes}
+            options={{
+              headerShown: true,
+              title: "Configurações",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="HistoricoPagamento"
+            component={HistoricoPagamento}
+            options={{
+              headerShown: true,
+              title: "Histórico de Pagamentos",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen name="Saques" component={Saques} />
+          <Stack.Screen
+            name="ConfigurarPagamento"
+            component={SetupMetodoPagamento}
+            options={{
+              headerShown: true,
+              title: "Configurar Recebimentos",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+
+          <Stack.Screen
+            name="DadosPessoais"
+            component={DadosPessoais}
+            options={{
+              headerShown: true,
+              title: "Dados Pessoais",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Seguranca"
+            component={Seguranca}
+            options={{
+              headerShown: true,
+              title: "Segurança",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Notificacoes"
+            component={Notificacoes}
+            options={{
+              headerShown: true,
+              title: "Notificações",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Idioma"
+            component={Idioma}
+            options={{
+              headerShown: true,
+              title: "Idioma",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="VisibilidadePerfil"
+            component={VisibilidadePerfil}
+            options={{
+              headerShown: true,
+              title: "Visibilidade do Perfil",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Localizacao"
+            component={Localizacao}
+            options={{
+              headerShown: true,
+              title: "Localização",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="CentralAjuda"
+            component={CentralAjuda}
+            options={{
+              headerShown: true,
+              title: "Central de Ajuda",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="TermosUso"
+            component={TermosUso}
+            options={{
+              headerShown: true,
+              title: "Termos de Uso",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="PoliticaPrivacidade"
+            component={PoliticaPrivacidade}
+            options={{
+              headerShown: true,
+              title: "Política de Privacidade",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Mensagens"
+            component={Mensagens}
+            options={{
+              headerShown: true,
+              title: "Mensagens",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Pagamentos"
+            component={Pagamentos}
+            options={{
+              headerShown: true,
+              title: "Pagamentos",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen name="TodasAvaliacoes" component={AllReviews} />
+          <Stack.Screen
+            name="PerfilVisitante"
+            component={PerfilVisitante}
+            options={{
+              headerShown: true,
+              title: "Perfil",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="PedidoDetalhes"
+            component={PedidoDetalhes}
+            options={{
+              headerShown: true,
+              title: "Detalhes do Pedido",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="ConfirmarPagamento"
+            component={ConfirmarPagamento}
+            options={{
+              headerShown: true,
+              title: "Confirmar Pagamento",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="Assinaturas"
+            component={Assinaturas}
+            options={{
+              headerShown: true,
+              title: "Assinaturas",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="ProcessarPagamentoAssinatura"
+            component={ProcessarPagamentoAssinatura}
+            options={{
+              headerShown: true,
+              title: "Assinaturas",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 };

@@ -13,13 +13,6 @@ export const ScrollContainer = styled.ScrollView.attrs({
   flex: 1;
 `;
 
-export const Title = styled.Text`
-  font-size: 24px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.text.primary};
-  margin-bottom: 24px;
-`;
-
 export const Form = styled.View`
   display: flex;
   flex-direction: column;
@@ -79,20 +72,4 @@ export const ErrorMessage = styled.Text`
   color: #dc3545;
   font-size: 14px;
   text-align: center;
-`;
-
-export const Header = styled.View`
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-  width: 100%;
-`;
-
-export const BackButton = styled.TouchableOpacity`
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  padding: 8px;
-  border-radius: 8px;
 `;

@@ -85,3 +85,69 @@ export const InfoText = styled.Text`
   line-height: 20px;
   text-align: center;
 `;
+
+export const MethodSection = styled.View`
+  margin-vertical: 16px;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }) => theme.colors.border};
+  padding-bottom: 16px;
+`;
+
+export const MethodHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+`;
+
+export const MethodTitle = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+export const MethodInput = styled.TextInput`
+  background-color: #f5f5f5;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 8px;
+`;
+
+export const MethodInputLabel = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 4px;
+`;
+
+export const SaveButton = styled.TouchableOpacity`
+  background-color: ${({ theme }) => theme.colors.primary};
+  padding: 16px;
+  border-radius: 8px;
+  align-items: center;
+  margin-top: 24px;
+`;
+
+export const SaveButtonText = styled.Text`
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+`;
+
+export const PixTypeSelector = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+export const PixTypeSelectorText = styled.TouchableOpacity`
+  padding: 8px 16px;
+  border-radius: 20px;
+  background-color: ${({ selected, theme }) =>
+    selected ? theme.colors.primary : "#f5f5f5"};
+`;
+
+export const PixTypeLabel = styled.Text`
+  color: ${({ selected }) => (selected ? "#fff" : "#666")};
+  font-size: 14px;
+`;

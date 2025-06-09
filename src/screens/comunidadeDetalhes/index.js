@@ -6,8 +6,6 @@ import { Ionicons } from "@expo/vector-icons"; // Para os ícones
 import { Text, View, ActivityIndicator, Alert } from "react-native";
 import {
   Container,
-  BackButton,
-  BackButtonText,
   CommunityCard,
   CommunityImage,
   Content,
@@ -123,10 +121,6 @@ const ComunidadeDetalhes = () => {
 
   return (
     <Container>
-      <BackButton onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={24} color="#666" />
-        <BackButtonText>Voltar</BackButtonText>
-      </BackButton>
       <CommunityCard>
         <CommunityImage source={{ uri: community.image }} />
         <Content>

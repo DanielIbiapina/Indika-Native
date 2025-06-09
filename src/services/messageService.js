@@ -31,6 +31,18 @@ export const messageService = {
         return response.data;
       }
 
+      // Se for uma mensagem de sistema
+      if (message.type === "system") {
+        const response = await api.post(`/chats/${chatId}/messages`, {
+          type: "system",
+          content:
+            typeof message.content === "string"
+              ? message.content
+              : message.content.text || JSON.stringify(message.content),
+        });
+        return response.data;
+      }
+
       // Se for uma mensagem de texto
       const response = await api.post(`/chats/${chatId}/messages`, {
         type: "text",

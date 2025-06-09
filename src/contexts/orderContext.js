@@ -45,9 +45,21 @@ export const OrderProvider = ({ children }) => {
 
   const updateOrderStatus = useCallback(async (orderId, newStatus) => {
     try {
-      await orderService.updateStatus(orderId, newStatus);
+      // Validar se a transição é permitida
+      const currentOrder = await orderService.getOrder(orderId);
+      const allowedTransitions = {
+        WAITING_QUOTE: ["QUOTE_SENT", "CANCELLED"],
+        QUOTE_SENT: ["QUOTE_ACCEPTED", "QUOTE_REJECTED"],
+        QUOTE_ACCEPTED: ["PAYMENT_PENDING", "CANCELLED"],
+        PAYMENT_PENDING: ["PAID", "CANCELLED"],
+        PAID: ["COMPLETED", "CANCELLED"],
+      };
 
-      // Atualiza o pedido após mudança de status
+      if (!allowedTransitions[currentOrder.status]?.includes(newStatus)) {
+        throw new Error("Transição de status não permitida");
+      }
+
+      await orderService.updateStatus(orderId, newStatus);
       await refreshOrder(orderId);
 
       setOrderUpdates((prev) => ({
@@ -56,6 +68,7 @@ export const OrderProvider = ({ children }) => {
       }));
     } catch (error) {
       console.error("Erro ao atualizar status do pedido:", error);
+      throw error;
     }
   }, []);
 

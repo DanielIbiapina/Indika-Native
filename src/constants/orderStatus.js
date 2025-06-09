@@ -1,21 +1,28 @@
 export const ORDER_STATUS = {
-  WAITING_QUOTE: "WAITING_QUOTE", // Cliente fez solicitação inicial
-  QUOTE_SENT: "QUOTE_SENT", // Prestador enviou orçamento
-  QUOTE_ACCEPTED: "QUOTE_ACCEPTED", // Cliente aceitou orçamento
-  QUOTE_REJECTED: "QUOTE_REJECTED", // Orçamento foi recusado
-  PENDING_PAYMENT: "PENDING_PAYMENT", // Novo status
-  PAID: "PAID", // Novo status
-  COMPLETED: "COMPLETED", // Novo status
+  WAITING_QUOTE: "WAITING_QUOTE",
+  QUOTE_SENT: "QUOTE_SENT",
+  QUOTE_REJECTED: "QUOTE_REJECTED",
+  QUOTE_ACCEPTED: "QUOTE_ACCEPTED",
+  PAYMENT_PENDING: "PAYMENT_PENDING",
+  PAID: "PAID",
+  CANCELLED: "CANCELLED",
 };
 
 export const ORDER_STATUS_LABELS = {
   WAITING_QUOTE: "Aguardando orçamento",
   QUOTE_SENT: "Orçamento enviado",
-  QUOTE_ACCEPTED: "Orçamento aceito",
   QUOTE_REJECTED: "Orçamento recusado",
-  PENDING_PAYMENT: "Aguardando pagamento",
-  PAID: "Pagamento realizado",
-  COMPLETED: "Concluído",
+  QUOTE_ACCEPTED: "Orçamento aceito",
+  PAYMENT_PENDING: "Aguardando pagamento",
+  PAID: "Pago",
+  CANCELLED: "Cancelado",
+};
+
+// Útil para validações e UI
+export const ORDER_STATUS_FLOW = {
+  QUOTE_PHASE: ["WAITING_QUOTE", "QUOTE_SENT", "QUOTE_REJECTED"],
+  PAYMENT_PHASE: ["QUOTE_ACCEPTED", "PAYMENT_PENDING"],
+  FINAL_PHASE: ["PAID", "CANCELLED"],
 };
 
 export const MESSAGE_TYPES = {
@@ -25,19 +32,21 @@ export const MESSAGE_TYPES = {
 
 export const getStatusColor = (status) => {
   switch (status) {
-    case "WAITING_QUOTE":
+    case ORDER_STATUS.WAITING_QUOTE:
       return "#FFA500"; // Laranja
-    case "QUOTE_SENT":
-      return "#0000FF"; // Azul
-    case "QUOTE_REJECTED":
-      return "#FF0000"; // Vermelho
-    case "QUOTE_ACCEPTED":
-    case "PAID":
-    case "COMPLETED":
-      return "#008000"; // Verde
-    case "PENDING_PAYMENT":
-      return "#FFA500";
+    case ORDER_STATUS.QUOTE_SENT:
+      return "#3498db"; // Azul
+    case ORDER_STATUS.QUOTE_REJECTED:
+      return "#e74c3c"; // Vermelho
+    case ORDER_STATUS.QUOTE_ACCEPTED:
+      return "#2ecc71"; // Verde
+    case ORDER_STATUS.PAYMENT_PENDING:
+      return "#f1c40f"; // Amarelo
+    case ORDER_STATUS.PAID:
+      return "#27ae60"; // Verde escuro
+    case ORDER_STATUS.CANCELLED:
+      return "#e74c3c"; // Vermelho
     default:
-      return "#808080"; // Cinza padrão
+      return "#95a5a6"; // Cinza
   }
 };

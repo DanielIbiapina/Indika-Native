@@ -1,5 +1,5 @@
-import React from "react";
-import { Linking, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import { Linking, ScrollView, Switch, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Container,
@@ -14,13 +14,113 @@ import {
   TipText,
   InfoSection,
   InfoText,
+  MethodSection,
+  MethodHeader,
+  MethodTitle,
+  MethodInput,
+  MethodInputLabel,
+  SaveButton,
+  SaveButtonText,
+  PixTypeSelector,
+  PixTypeSelectorText,
+  PixTypeLabel,
 } from "./styles";
+import { paymentService } from "../../../services/paymentService";
 
 const MP_URL = "https://www.mercadopago.com.br/home";
 
+const PIX_KEY_TYPES = [
+  { value: "CPF", label: "CPF" },
+  { value: "CNPJ", label: "CNPJ" },
+  { value: "EMAIL", label: "E-mail" },
+  { value: "PHONE", label: "Telefone" },
+  { value: "RANDOM", label: "Chave Aleatória" },
+];
+
 const SetupMetodoPagamento = () => {
+  const [methods, setMethods] = useState({
+    pix: false,
+    cash: true,
+    mercadopago: false,
+  });
+  const [pixConfig, setPixConfig] = useState({
+    key: "",
+    keyType: "CPF",
+    holderName: "",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPaymentMethods();
+  }, []);
+
+  const loadPaymentMethods = async () => {
+    try {
+      const response = await paymentService.getPaymentMethod();
+      if (response?.data) {
+        const pixMethod = response.data.details?.methods?.find(
+          (m) => m.type === "pix"
+        );
+        const mpMethod = response.data.details?.methods?.find(
+          (m) => m.type === "mercadopago"
+        );
+
+        setMethods((prev) => ({
+          ...prev,
+          pix: !!pixMethod,
+          mercadopago: !!mpMethod,
+        }));
+
+        if (pixMethod?.details) {
+          setPixConfig(pixMethod.details);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar métodos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOpenMP = () => {
     Linking.openURL(MP_URL);
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      if (methods.pix) {
+        if (!pixConfig.key || !pixConfig.keyType || !pixConfig.holderName) {
+          Alert.alert("Erro", "Por favor, preencha todos os dados do PIX");
+          return;
+        }
+      }
+
+      const paymentMethods = [];
+
+      if (methods.pix) {
+        paymentMethods.push({
+          type: "pix",
+          details: pixConfig,
+        });
+      }
+
+      if (methods.mercadopago) {
+        paymentMethods.push({
+          type: "mercadopago",
+        });
+      }
+
+      if (methods.cash) {
+        paymentMethods.push({
+          type: "cash",
+        });
+      }
+
+      await paymentService.setupPaymentMethod(paymentMethods);
+      Alert.alert("Sucesso", "Configurações de pagamento atualizadas!");
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível salvar as configurações");
+    }
   };
 
   return (
@@ -31,43 +131,108 @@ const SetupMetodoPagamento = () => {
             <InstructionItem>
               <InstructionNumber>1</InstructionNumber>
               <InstructionText>
-                Acesse sua conta no Mercado Pago
+                Selecione os métodos de pagamento que deseja aceitar
               </InstructionText>
             </InstructionItem>
 
-            <InstructionItem>
-              <InstructionNumber>2</InstructionNumber>
-              <InstructionText>
-                Configure sua conta bancária para recebimentos
-              </InstructionText>
-            </InstructionItem>
+            <MethodSection>
+              <MethodHeader>
+                <MethodTitle>PIX</MethodTitle>
+                <Switch
+                  value={methods.pix}
+                  onValueChange={(value) =>
+                    setMethods((prev) => ({ ...prev, pix: value }))
+                  }
+                />
+              </MethodHeader>
+              {methods.pix && (
+                <>
+                  <MethodInputLabel>Tipo de Chave PIX</MethodInputLabel>
+                  <PixTypeSelector>
+                    {PIX_KEY_TYPES.map((type) => (
+                      <PixTypeSelectorText
+                        key={type.value}
+                        selected={pixConfig.keyType === type.value}
+                        onPress={() =>
+                          setPixConfig((prev) => ({
+                            ...prev,
+                            keyType: type.value,
+                          }))
+                        }
+                      >
+                        <PixTypeLabel
+                          selected={pixConfig.keyType === type.value}
+                        >
+                          {type.label}
+                        </PixTypeLabel>
+                      </PixTypeSelectorText>
+                    ))}
+                  </PixTypeSelector>
 
-            <InstructionItem>
-              <InstructionNumber>3</InstructionNumber>
-              <InstructionText>
-                Defina suas preferências de transferência automática
-              </InstructionText>
-            </InstructionItem>
+                  <MethodInputLabel>Chave PIX</MethodInputLabel>
+                  <MethodInput
+                    value={pixConfig.key}
+                    onChangeText={(text) =>
+                      setPixConfig((prev) => ({ ...prev, key: text }))
+                    }
+                    placeholder={`Digite sua chave PIX (${pixConfig.keyType})`}
+                  />
 
-            <MPButton onPress={handleOpenMP}>
-              <Ionicons name="open-outline" size={24} color="#FFF" />
-              <MPButtonText>Abrir Mercado Pago</MPButtonText>
-            </MPButton>
+                  <MethodInputLabel>Nome do Titular</MethodInputLabel>
+                  <MethodInput
+                    value={pixConfig.holderName}
+                    onChangeText={(text) =>
+                      setPixConfig((prev) => ({ ...prev, holderName: text }))
+                    }
+                    placeholder="Digite o nome do titular da chave"
+                  />
+                </>
+              )}
+            </MethodSection>
+
+            <MethodSection>
+              <MethodHeader>
+                <MethodTitle>Dinheiro</MethodTitle>
+                <Switch value={true} disabled={true} />
+              </MethodHeader>
+            </MethodSection>
+
+            <MethodSection>
+              <MethodHeader>
+                <MethodTitle>Mercado Pago (Parcelado)</MethodTitle>
+                <Switch
+                  value={methods.mercadopago}
+                  onValueChange={(value) =>
+                    setMethods((prev) => ({ ...prev, mercadopago: value }))
+                  }
+                />
+              </MethodHeader>
+              {methods.mercadopago && (
+                <MPButton onPress={handleOpenMP}>
+                  <Ionicons name="open-outline" size={24} color="#FFF" />
+                  <MPButtonText>Configurar no Mercado Pago</MPButtonText>
+                </MPButton>
+              )}
+            </MethodSection>
+
+            <SaveButton onPress={handleSaveSettings}>
+              <SaveButtonText>Salvar Configurações</SaveButtonText>
+            </SaveButton>
           </ContentCard>
 
           <TipCard>
             <Ionicons name="bulb-outline" size={24} color="#422680" />
             <TipText>
-              Dica: Ative as transferências automáticas para receber seu
-              dinheiro assim que estiver disponível
+              Dica: Ofereça múltiplas opções de pagamento para atender
+              diferentes preferências dos clientes
             </TipText>
           </TipCard>
 
           <InfoSection>
             <InfoText>
-              Todos os pagamentos são processados de forma segura através do
-              Mercado Pago. O dinheiro fica disponível na sua conta em até 14
-              dias após a conclusão do serviço.
+              Você pode alterar suas configurações de pagamento a qualquer
+              momento. Pagamentos via Mercado Pago têm uma taxa de
+              processamento.
             </InfoText>
           </InfoSection>
         </ScrollContent>

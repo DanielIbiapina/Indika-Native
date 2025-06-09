@@ -132,13 +132,20 @@ export const CardContent = styled.View`
 
 export const DetailRow = styled.View`
   flex-direction: row;
+  align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 16px 0;
   border-bottom-width: ${({ last }) => (last ? 0 : 1)}px;
   border-bottom-color: ${({ theme }) => theme.colors.border};
 `;
 
-export const DetailLabel = styled.Text`
+export const DetailLabel = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const DetailLabelText = styled.Text`
   font-size: 14px;
   color: ${({ theme }) => theme.colors.text.secondary};
 `;
@@ -149,7 +156,7 @@ export const DetailValue = styled.Text`
   color: ${({ theme }) => theme.colors.text.primary};
   flex: 1;
   text-align: right;
-  margin-left: 8px;
+  margin-left: 16px;
 `;
 
 export const ActionIconButton = styled.View`
@@ -267,11 +274,10 @@ export const CategoryText = styled.Text`
 `;
 
 export const ServiceImageContainer = styled.View`
-  width: 100%;
-  height: 150px;
+  width: 80px;
+  height: 80px;
   border-radius: 8px;
   overflow: hidden;
-  margin-bottom: 16px;
 `;
 
 export const ServiceImage = styled.Image`
@@ -300,59 +306,159 @@ export const LocationIcon = styled.View`
 
 // Progress tracking components
 export const ProgressWrapper = styled.View`
-  padding: 12px 0;
+  padding: 20px 0;
 `;
 
 export const ProgressContainer = styled.View`
   flex-direction: row;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
-`;
-
-export const ProgressLine = styled.View`
-  position: absolute;
-  height: 2px;
-  background-color: ${({ theme }) => theme.colors.border};
-  top: 9px;
-  left: 10px;
-  right: 10px;
+  padding: 0 10px;
 `;
 
 export const ProgressStage = styled.View`
   align-items: center;
-  z-index: 1;
-  width: 18%;
+  flex: 1;
+  position: relative;
 `;
 
 export const ProgressStageCircle = styled.View`
-  width: 20px;
-  height: 20px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 16px;
   align-items: center;
   justify-content: center;
   background-color: ${({ completed, current, isRejected, theme }) => {
     if (isRejected) return getStatusColor("QUOTE_REJECTED");
-    if (completed) return theme.colors.primary;
-    if (current) return "#fff";
-    return theme.colors.border;
+    if (completed || current) return theme.colors.primary;
+    return "#e0e0e0";
   }};
-  border-width: ${({ current }) => (current ? 2 : 0)}px;
+  border-width: ${({ current }) => (current ? 3 : 0)}px;
   border-color: ${({ current, theme }) =>
     current ? theme.colors.primary : "transparent"};
+  elevation: ${({ completed, current }) => (completed || current ? 3 : 1)};
+  ${Platform.OS === "ios" &&
+  `
+    shadow-color: #000;
+    shadow-offset: 0px 2px;
+    shadow-opacity: ${({ completed, current }) =>
+      completed || current ? 0.2 : 0.1};
+    shadow-radius: 3px;
+  `}
 `;
 
 export const ProgressStageText = styled.Text`
-  font-size: 11px;
+  font-size: 12px;
   text-align: center;
-  margin-top: 6px;
+  margin-top: 8px;
   font-weight: ${({ completed, current }) =>
     completed || current ? "600" : "400"};
   color: ${({ completed, current, theme }) => {
-    if (completed) return theme.colors.primary;
-    if (current) return theme.colors.primary;
+    if (completed || current) return theme.colors.primary;
     return theme.colors.text.secondary;
   }};
+  max-width: 60px;
+`;
+
+export const ProgressLine = styled.View`
+  height: 2px;
+  background-color: ${({ completed, theme }) =>
+    completed ? theme.colors.primary : "#e0e0e0"};
+`;
+
+// Componentes para estado cancelado
+export const CancelledContainer = styled.View`
+  align-items: center;
+  padding: 32px 16px;
+`;
+
+export const CancelledText = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-top: 16px;
+  text-align: center;
+`;
+
+export const CancelledReason = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-top: 8px;
+  text-align: center;
+  font-style: italic;
+`;
+
+// Melhorar seção de serviço
+export const ServiceInfoSection = styled.View`
+  margin-bottom: 24px;
+  align-items: center;
+`;
+
+// Destaque para horário
+export const ScheduleHighlight = styled.View`
+  flex-direction: row;
+  align-items: center;
+  background-color: ${({ theme }) => `${theme.colors.primary}08`};
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+  border-left-width: 4px;
+  border-left-color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const ScheduleIcon = styled.View`
+  margin-right: 16px;
+`;
+
+export const ScheduleInfo = styled.View`
+  flex: 1;
+`;
+
+export const ScheduleDate = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: 4px;
+`;
+
+export const SchedulePeriod = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+`;
+
+// Seção de detalhes melhorada
+export const DetailsSection = styled.View`
+  margin-bottom: 16px;
+`;
+
+// Card para observações
+export const ObservationsCard = styled.View`
+  background-color: ${({ theme }) => theme.colors.background};
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  border-left-width: 4px;
+  border-left-color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const ObservationsTitle = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+`;
+
+export const ObservationsTitleText = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+export const ObservationsText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  line-height: 20px;
 `;
 
 // History tab components
@@ -406,9 +512,12 @@ export const NoHistoryText = styled.Text`
 
 // Quotation components
 export const QuotationDate = styled.Text`
-  font-size: 13px;
+  font-size: 12px;
   color: ${({ theme }) => theme.colors.text.secondary};
-  margin-bottom: 12px;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  text-align: center;
+  font-style: italic;
 `;
 
 export const QuotationDescription = styled.Text`
@@ -508,4 +617,333 @@ export const ActionQuotationButtonText = styled.Text`
   font-weight: 600;
   font-size: 15px;
   margin-left: 8px;
+`;
+
+// Seção de detalhes do orçamento
+export const QuotationDetailsSection = styled.View`
+  margin-bottom: 16px;
+`;
+
+// Preço destacado
+export const QuotationPrice = styled.Text`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.primary};
+  text-align: right;
+  flex: 1;
+  margin-left: 16px;
+`;
+
+// Card para descrição do prestador
+export const QuotationDescriptionCard = styled.View`
+  background-color: ${({ theme }) => theme.colors.background};
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  border-left-width: 3px;
+  border-left-color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const QuotationDescriptionTitle = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+`;
+
+export const QuotationDescriptionTitleText = styled.Text`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+// === COMPONENTES DO ORÇAMENTO - Novo design ===
+export const QuotationValueContainer = styled.View`
+  align-items: center;
+  padding: 20px 0;
+  border-bottom-width: 1px;
+  border-bottom-color: ${({ theme }) => theme.colors.border};
+  margin-bottom: 20px;
+`;
+
+export const QuotationValueMain = styled.Text`
+  font-size: 32px;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 4px;
+`;
+
+export const QuotationValueLabel = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+`;
+
+export const QuotationDetailsGrid = styled.View`
+  gap: 16px;
+  margin-bottom: 20px;
+`;
+
+export const QuotationDetailItem = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 0;
+`;
+
+export const QuotationDetailIcon = styled.View`
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: #f8f9fa;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+`;
+
+export const QuotationDetailContent = styled.View`
+  flex: 1;
+`;
+
+export const QuotationDetailLabel = styled.Text`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 2px;
+`;
+
+export const QuotationDetailValue = styled.Text`
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+export const QuotationMessageCard = styled.View`
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left-width: 4px;
+  border-left-color: ${({ theme }) => theme.colors.primary};
+`;
+
+export const QuotationMessageTitle = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: 8px;
+`;
+
+export const QuotationMessageText = styled.Text`
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.text.primary};
+  line-height: 20px;
+`;
+
+export const QuotationButtonsContainer = styled.View`
+  gap: 12px;
+`;
+
+export const QuotationAcceptButton = styled.TouchableOpacity`
+  background-color: ${({ theme }) => theme.colors.primary};
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 8px;
+  gap: 8px;
+`;
+
+export const QuotationRejectButton = styled.TouchableOpacity`
+  background-color: #fff;
+  border-width: 1px;
+  border-color: #dc3545;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 8px;
+  gap: 8px;
+`;
+
+export const QuotationButtonText = styled.Text`
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
+export const QuotationRejectButtonText = styled.Text`
+  color: #dc3545;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
+// === COMPONENTES DO SERVIÇO - Novo design ===
+export const ServiceHeaderSection = styled.View`
+  flex-direction: row;
+  margin-bottom: 24px;
+`;
+
+export const ServiceHeaderInfo = styled.View`
+  flex: 1;
+  margin-left: 16px;
+  justify-content: center;
+`;
+
+export const ServiceDetailsGrid = styled.View`
+  gap: 16px;
+  margin-bottom: 20px;
+`;
+
+export const ServiceDetailItem = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+`;
+
+export const ServiceDetailIcon = styled.View`
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: ${({ theme }) => `${theme.colors.primary}15`};
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+`;
+
+export const ServiceDetailContent = styled.View`
+  flex: 1;
+`;
+
+export const ServiceDetailLabel = styled.Text`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 4px;
+`;
+
+export const ServiceDetailValue = styled.Text`
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+  line-height: 20px;
+`;
+
+export const ClientObservationsCard = styled.View`
+  background-color: #fff3cd;
+  border-radius: 8px;
+  padding: 16px;
+  border-left-width: 4px;
+  border-left-color: #ffc107;
+`;
+
+export const ClientObservationsHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+`;
+
+export const ClientObservationsTitle = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #856404;
+`;
+
+export const ClientObservationsText = styled.Text`
+  font-size: 14px;
+  color: #856404;
+  line-height: 20px;
+`;
+
+// === COMPONENTES DA SOLICITAÇÃO DO CLIENTE ===
+export const ClientRequestBadge = styled.View`
+  flex-direction: row;
+  align-items: center;
+  background-color: #dbeafe;
+  padding: 6px 12px;
+  border-radius: 16px;
+  gap: 4px;
+`;
+
+export const ClientRequestBadgeText = styled.Text`
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 500;
+`;
+
+export const ClientRequestGrid = styled.View`
+  gap: 16px;
+  margin-bottom: 20px;
+`;
+
+export const ClientRequestItem = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 0;
+`;
+
+export const ClientRequestIcon = styled.View`
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background-color: #f0f9ff;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+`;
+
+export const ClientRequestContent = styled.View`
+  flex: 1;
+`;
+
+export const ClientRequestLabel = styled.Text`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: 2px;
+`;
+
+export const ClientRequestValue = styled.Text`
+  font-size: 15px;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.text.primary};
+`;
+
+export const ClientRequestNote = styled.View`
+  background-color: #f0f9ff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-left-width: 4px;
+  border-left-color: #2563eb;
+`;
+
+export const ClientRequestNoteHeader = styled.View`
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+`;
+
+export const ClientRequestNoteTitle = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e40af;
+`;
+
+export const ClientRequestNoteText = styled.Text`
+  font-size: 14px;
+  color: #1e40af;
+  line-height: 20px;
+`;
+
+export const ClientRequestFooter = styled.View`
+  align-items: center;
+  padding-top: 16px;
+  border-top-width: 1px;
+  border-top-color: ${({ theme }) => theme.colors.border};
+`;
+
+export const ClientRequestDate = styled.Text`
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.text.secondary};
+  font-style: italic;
 `;

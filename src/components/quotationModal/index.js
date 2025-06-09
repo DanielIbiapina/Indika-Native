@@ -51,6 +51,15 @@ const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
 
   const handleConfirm = () => {
     try {
+      // Validar se o pedido está em estado que permite cotação
+      if (
+        initialData?.status &&
+        !["WAITING_QUOTE", "QUOTE_REJECTED"].includes(initialData.status)
+      ) {
+        Alert.alert("Erro", "Não é possível enviar orçamento neste momento");
+        return;
+      }
+
       // Validar preço
       if (!quotationData.price || parseFloat(quotationData.price) <= 0) {
         Alert.alert("Erro", "Por favor, insira um preço válido");

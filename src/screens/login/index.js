@@ -561,7 +561,7 @@ const Login = () => {
       }
 
       if (result.success) {
-        navigation.navigate("Home");
+        navigation.navigate("TabNavigator");
       } else {
         setError(result.error);
       }
@@ -596,7 +596,7 @@ const Login = () => {
       );
 
       if (result.success) {
-        navigation.navigate("Home");
+        navigation.navigate("TabNavigator");
       } else {
         setError(result.error);
       }
@@ -617,6 +617,10 @@ const Login = () => {
     }*/
   };
 
+  const handleSignupPress = () => {
+    navigation.navigate("PhoneVerification");
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -628,39 +632,9 @@ const Login = () => {
           <Container>
             <LoginCard>
               <Title>Bem-vindo(a)!</Title>
-              <Subtitle>
-                {isLogin
-                  ? "Entre para encontrar os melhores serviços"
-                  : "Crie sua conta e encontre os melhores serviços"}
-              </Subtitle>
+              <Subtitle>Entre para encontrar os melhores serviços</Subtitle>
 
               <Form>
-                {!isLogin && (
-                  <>
-                    <InputWrapper>
-                      <Ionicons name="person-outline" size={20} color="#666" />
-                      <Input
-                        placeholder="Nome completo"
-                        value={formData.name}
-                        onChange={(e) => handleChange(e, "name")}
-                        required
-                      />
-                    </InputWrapper>
-
-                    <InputWrapper>
-                      <Ionicons name="card-outline" size={20} color="#666" />
-                      <Input
-                        placeholder="CPF (apenas números)"
-                        value={formData.cpf}
-                        onChange={(e) => handleChange(e, "cpf")}
-                        onBlur={() => handleBlur("cpf")}
-                        keyboardType="numeric"
-                        maxLength={14}
-                        required
-                      />
-                    </InputWrapper>
-                  </>
-                )}
                 <InputWrapper>
                   <Ionicons name="mail-outline" size={20} color="#666" />
                   <Input
@@ -690,19 +664,13 @@ const Login = () => {
                   </ErrorMessage>
                 )}
 
-                {isLogin && (
-                  <ForgotPassword>
-                    <Text>Esqueceu sua senha?</Text>
-                  </ForgotPassword>
-                )}
+                <ForgotPassword>
+                  <Text>Esqueceu sua senha?</Text>
+                </ForgotPassword>
 
                 <Button onPress={handleSubmit} disabled={loading}>
                   <ButtonText>
-                    {loading
-                      ? "Carregando..."
-                      : isLogin
-                      ? "Entrar"
-                      : "Criar conta"}
+                    {loading ? "Carregando..." : "Entrar"}
                   </ButtonText>
                 </Button>
 
@@ -719,12 +687,8 @@ const Login = () => {
                   </SocialButtonText>
                 </SocialButton>
 
-                <ToggleText onPress={() => setIsLogin(!isLogin)}>
-                  <Text>
-                    {isLogin
-                      ? "Ainda não tem conta? Cadastre-se"
-                      : "Já tem uma conta? Entre"}
-                  </Text>
+                <ToggleText onPress={handleSignupPress}>
+                  <Text>Ainda não tem conta? Cadastre-se</Text>
                 </ToggleText>
               </Form>
             </LoginCard>

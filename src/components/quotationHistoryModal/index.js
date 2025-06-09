@@ -44,24 +44,30 @@ const QuotationHistoryModal = ({ isVisible, onClose, orderId }) => {
     }
   }, [isVisible, orderId]); // Re-fetch quando o modal é aberto
 
-  const getQuotationStatus = (index) => {
-    if (index === quotations.length - 1) {
-      return "current";
+  const getQuotationStatus = (quotation) => {
+    switch (quotation.status) {
+      case "QUOTE_SENT":
+        return "pending";
+      case "QUOTE_ACCEPTED":
+        return "accepted";
+      case "QUOTE_REJECTED":
+        return "rejected";
+      default:
+        return "old";
     }
-    return "old";
   };
 
   const renderQuotation = ({ item, index }) => (
-    <QuotationItem status={getQuotationStatus(index)}>
+    <QuotationItem status={getQuotationStatus(item)}>
       <QuotationHeader>
         <QuotationDate>
           {format(new Date(item.createdAt), "dd 'de' MMMM 'às' HH:mm", {
             locale: ptBR,
           })}
         </QuotationDate>
-        <StatusBadge status={getQuotationStatus(index)}>
-          <StatusText status={getQuotationStatus(index)}>
-            {index === quotations.length - 1 ? "Atual" : "Anterior"}
+        <StatusBadge status={getQuotationStatus(item)}>
+          <StatusText status={getQuotationStatus(item)}>
+            {ORDER_STATUS_LABELS[item.status]}
           </StatusText>
         </StatusBadge>
       </QuotationHeader>

@@ -216,3 +216,107 @@ export const LoadMoreButtonText = styled.Text`
   color: ${(props) => props.theme.colors.primary};
   font-weight: 500;
 `;
+
+export const FriendRequestsSection = styled.View`
+  background-color: #fff;
+  border-radius: 12px;
+  margin: 0 16px 24px 16px;
+  elevation: 4;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+`;
+
+export const SectionHeader = styled.View`
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
+`;
+
+export const SectionTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text.primary};
+`;
+
+export const Badge = styled.View`
+  background-color: ${(props) => props.theme.colors.primary};
+  border-radius: 12px;
+  padding: 4px 8px;
+  min-width: 24px;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const BadgeText = styled.Text`
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+export const RequestCard = styled.View`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
+`;
+
+export const RequestAvatar = styled.Image`
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  margin-right: 12px;
+  background-color: #f0f0f0;
+`;
+
+export const RequestInfo = styled.View`
+  flex: 1;
+  margin-right: 12px;
+`;
+
+export const RequestName = styled.Text`
+  font-size: 16px;
+  font-weight: 500;
+  color: ${(props) => props.theme.colors.text.primary};
+  margin-bottom: 2px;
+`;
+
+export const RequestMessage = styled.Text`
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+`;
+
+export const RequestActions = styled.View`
+  flex-direction: row;
+  gap: 8px;
+`;
+
+export const AcceptButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  background-color: #28a745;
+  padding: 6px 12px;
+  border-radius: 6px;
+`;
+
+export const RejectButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  background-color: #dc3545;
+  padding: 6px 12px;
+  border-radius: 6px;
+`;
+
+export const ActionButtonText = styled.Text`
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+`;

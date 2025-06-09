@@ -5,17 +5,28 @@ import { Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 export const QuotationContainer = styled.View`
-  background-color: #fff;
+  background-color: ${({ isOwn, messageType }) => {
+    if (messageType === MESSAGE_TYPES.REQUEST && isOwn) {
+      return "#f8f4ff"; // Roxo bem claro para solicitação do cliente
+    }
+    return "#fff"; // Branco para orçamentos
+  }};
   border-radius: 16px;
+  border-bottom-right-radius: ${({ isOwn }) => (isOwn ? "4px" : "16px")};
+  border-bottom-left-radius: ${({ isOwn }) => (isOwn ? "16px" : "4px")};
   padding: 16px;
   margin: 8px 0;
   border-left-width: 4px;
-  border-left-color: ${({ status, messageType }) =>
-    messageType === MESSAGE_TYPES.REQUEST
-      ? theme.colors.text.secondary // Cor neutra para solicitação
-      : getStatusColor(status)};
+  border-left-color: ${({ status, messageType, isOwn }) => {
+    if (messageType === MESSAGE_TYPES.REQUEST && isOwn) {
+      return "#422680"; // Roxo do tema para solicitação do cliente
+    }
+    return messageType === MESSAGE_TYPES.REQUEST
+      ? "#757575" // Cor neutra para solicitação
+      : getStatusColor(status);
+  }};
   elevation: 2;
-  //transform: scaleY(-1);
+  width: 90%; // Aumentar a largura para mostrar mais informações
   ${Platform.OS === "ios" &&
   `
     shadow-color: #000;

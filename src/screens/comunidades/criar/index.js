@@ -1,14 +1,10 @@
 import React, { useState } from "react";
 import { Switch as RNSwitch, Text } from "react-native";
-import { useNavigation } from "@react-navigation/native"; // React Navigation para navegação
+import { useNavigation } from "@react-navigation/native";
 import { communityService } from "../../../services/communityService";
-import { Ionicons } from "@expo/vector-icons"; // Biblioteca de ícones do Expo
 import {
   Container,
   ScrollContainer,
-  Header,
-  BackButton,
-  Title,
   Form,
   Input,
   TextArea,
@@ -17,7 +13,7 @@ import {
   Button,
   ErrorMessage,
 } from "./styles";
-import ImageUpload from "../../../components/imageUpload"; // Componente de upload de imagem
+import ImageUpload from "../../../components/imageUpload";
 
 const CriarComunidade = () => {
   const navigation = useNavigation();
@@ -81,14 +77,6 @@ const CriarComunidade = () => {
   return (
     <Container>
       <ScrollContainer>
-        <Header>
-          <BackButton onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="#666" />
-            <Text style={{ color: "#666" }}>Voltar</Text>
-          </BackButton>
-          <Title>Criar Comunidade</Title>
-        </Header>
-
         <Form>
           <ImageUpload
             value={formData.image}

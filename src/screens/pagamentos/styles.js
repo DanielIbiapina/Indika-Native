@@ -38,3 +38,17 @@ export const MenuItemText = styled.Text`
   color: ${(props) => props.theme.colors.text.primary};
   margin-left: 12px;
 `;
+
+export const LoadingContainer = styled.View`
+  flex: 1;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+`;
+
+export const ErrorText = styled.Text`
+  text-align: center;
+  color: ${({ theme }) => theme.colors.error || "#ff0000"};
+  margin: 24px 16px;
+  font-size: 16px;
+`;

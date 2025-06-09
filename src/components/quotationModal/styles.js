@@ -108,3 +108,23 @@ export const ButtonText = styled.Text`
   font-size: 14px;
   font-weight: 600;
 `;
+
+export const PaymentMethodsContainer = styled.View`
+  margin-top: 8px;
+`;
+
+export const PaymentMethodOption = styled.TouchableOpacity`
+  padding: 12px;
+  background-color: ${({ selected, theme }) =>
+    selected ? theme.colors.primary : "transparent"};
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid ${({ theme }) => theme.colors.primary};
+`;
+
+export const PaymentOptionText = styled.Text`
+  color: ${({ selected, theme }) =>
+    selected ? "white" : theme.colors.primary};
+  text-align: center;
+  font-weight: 500;
+`;

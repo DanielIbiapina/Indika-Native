@@ -1,6 +1,6 @@
 export const generateWelcomeMessage = (providerName) => {
   return {
-    type: "text",
+    type: "system",
     content: `Olá! Você iniciou uma conversa com ${providerName}. 
 Em breve você receberá um orçamento para o serviço solicitado.
     
