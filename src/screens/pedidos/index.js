@@ -10,6 +10,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../contexts/authContext";
 import { useOrder } from "../../contexts/orderContext";
+import { reviewService } from "../../services/reviewService";
 import OrderCard from "../../components/orderCard";
 import SearchBar from "../../components/searchBar";
 
@@ -38,25 +39,40 @@ const ACTIVE_STATUS = [
   "QUOTE_ACCEPTED",
   "PAYMENT_PENDING",
   "PENDING_CONFIRMATION",
-  "PAID",
 ];
 
-const COMPLETED_STATUS = ["COMPLETED", "CANCELLED", "QUOTE_REJECTED"];
+const COMPLETED_STATUS = ["COMPLETED", "CANCELLED", "QUOTE_REJECTED", "PAID"];
 
 const Pedidos = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { signed: isLoggedIn } = useAuth();
+  const { signed: isLoggedIn, user } = useAuth();
   const { orderList, loadOrders, loading } = useOrder();
 
   const [activeTab, setActiveTab] = useState("active");
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [reviews, setReviews] = useState([]);
+
+  const loadUserReviews = async () => {
+    if (!user?.id) return;
+
+    try {
+      const userReviews = await reviewService.listByUser(user.id);
+      setReviews(userReviews);
+    } catch (error) {
+      console.error("Erro ao carregar avaliações do usuário:", error);
+      setReviews([]);
+    }
+  };
 
   useEffect(() => {
     loadOrders();
-  }, []);
+    if (isLoggedIn && user) {
+      loadUserReviews();
+    }
+  }, [isLoggedIn, user]);
 
   useEffect(() => {
     if (orderList.length > 0) {
@@ -78,6 +94,7 @@ const Pedidos = () => {
     const unsubscribe = navigation.addListener("focus", () => {
       if (route.params?.shouldRefresh) {
         loadOrders();
+        loadUserReviews();
         navigation.setParams({ shouldRefresh: false });
       }
     });
@@ -88,7 +105,7 @@ const Pedidos = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await loadOrders();
+      await Promise.all([loadOrders(), loadUserReviews()]);
     } catch (error) {
       console.error("Erro ao atualizar:", error);
     } finally {
@@ -160,6 +177,7 @@ const Pedidos = () => {
           <OrderCard
             order={item}
             isOrderPage={true}
+            reviews={reviews}
             onPress={() =>
               navigation.navigate("PedidoDetalhes", { orderId: item.id })
             }

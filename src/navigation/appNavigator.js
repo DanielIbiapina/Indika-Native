@@ -49,11 +49,10 @@ import ConfirmarPagamento from "../screens/pagamentos/confirmarPagamento";
 import Assinaturas from "../screens/assinaturas";
 import ProcessarPagamentoAssinatura from "../screens/pagamentos/processarPagamentoAssinatura";
 
-// Importar as novas telas
+// Importar as novas telas de autenticação e cadastro
 import OnBoarding from "../screens/onBoarding";
-import PhoneVerification from "../screens/phoneVerification";
-import CodeVerification from "../screens/codeVerification";
-import CompleteSignup from "../screens/cadastro";
+import SignupFlow from "../screens/cadastro"; // <--- NOVO: Fluxo de cadastro unificado
+import TodasComunidades from "../screens/todasComunidades";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -64,12 +63,7 @@ const AuthNavigator = () => {
   return (
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Entrar" component={Login} />
-      <AuthStack.Screen
-        name="PhoneVerification"
-        component={PhoneVerification}
-      />
-      <AuthStack.Screen name="CodeVerification" component={CodeVerification} />
-      <AuthStack.Screen name="CompleteSignup" component={CompleteSignup} />
+      <AuthStack.Screen name="Cadastro" component={SignupFlow} />
     </AuthStack.Navigator>
   );
 };
@@ -140,10 +134,6 @@ const MainStack = () => {
         }}
       />
       <Stack.Screen name="CriarServico" component={CriarServico} />
-
-      <Stack.Screen name="PhoneVerification" component={PhoneVerification} />
-      <Stack.Screen name="CodeVerification" component={CodeVerification} />
-      <Stack.Screen name="CompleteSignup" component={CompleteSignup} />
 
       {!signed ? (
         <Stack.Screen name="AuthNavigator" component={AuthNavigator} />
@@ -383,6 +373,18 @@ const MainStack = () => {
             options={{
               headerShown: true,
               title: "Assinaturas",
+              headerTintColor: "#422680",
+              headerStyle: {
+                backgroundColor: "#fff",
+              },
+            }}
+          />
+          <Stack.Screen
+            name="TodasComunidades"
+            component={TodasComunidades}
+            options={{
+              headerShown: true,
+              title: "Comunidades",
               headerTintColor: "#422680",
               headerStyle: {
                 backgroundColor: "#fff",

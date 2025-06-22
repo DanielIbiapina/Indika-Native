@@ -170,11 +170,21 @@ const Comunidades = () => {
   const renderCommunitySection = (data, title, subtitle) => {
     if (!data?.length) return null;
 
+    const isPopular = title.includes("populares");
+
     return (
       <Section>
         <SectionTitle>
           <SectionTitleText>{title}</SectionTitleText>
-          <ViewAllText>{subtitle}</ViewAllText>
+          {isPopular ? (
+            <ViewAllText
+              onPress={() => navigation.navigate("TodasComunidades")}
+            >
+              Ver todas
+            </ViewAllText>
+          ) : (
+            <ViewAllText>{subtitle}</ViewAllText>
+          )}
         </SectionTitle>
         <CommunityList
           data={data}
@@ -361,7 +371,7 @@ const Comunidades = () => {
                 renderCommunitySection(
                   communities.userCommunities,
                   "Minhas Comunidades",
-                  "Ver todas"
+                  ""
                 )
               ))}
 

@@ -39,7 +39,7 @@ const OrderCard = ({
   order,
   onStatusUpdate,
   isOrderPage,
-  reviews = [],
+  reviews,
   onPress,
   showOrderDetails,
 }) => {
@@ -95,9 +95,11 @@ const OrderCard = ({
     handleViewDetails();
   };
 
-  const userReview = reviews.find(
+  const userReview = reviews?.reviews?.find(
     (r) => r.orderId === order.id && r.reviewerId === user?.id
   );
+
+  console.log("🔍 userReview encontrada:", userReview);
 
   const handleQuotation = () => {
     setShowQuotationModal(true);
@@ -114,7 +116,6 @@ const OrderCard = ({
 
   // Renderizar ações baseadas no status atual
   const renderActions = () => {
-    console.log("order.status", order.status);
     if (isProvider) {
       switch (order.status) {
         case "WAITING_QUOTE":
@@ -124,30 +125,28 @@ const OrderCard = ({
           return null;
       }
     } else {
-      // Ações do cliente - REMOVER todos os botões
+      // Ações do cliente
       switch (order.status) {
-        // REMOVIDO: botões "Aceitar/Recusar Orçamento"
-        // case "QUOTE_SENT":
-
-        // REMOVIDO: botão "Realizar Pagamento"
-        // case "QUOTE_ACCEPTED":
-        //   return (
-        //     <ActionsContainer>
-        //       <ActionButton
-        //         onPress={handlePayment}
-        //         testID={`make-payment-${order.id}`}
-        //       >
-        //         <ButtonText>Realizar Pagamento</ButtonText>
-        //       </ActionButton>
-        //     </ActionsContainer>
-        //   );
-
         case "PAID":
-          console.log("userReview", !userReview);
-          console.log("isOrderPage", isOrderPage);
-          if (!userReview && isOrderPage) {
-            console.log("userReview", !userReview);
-            console.log("isOrderPage", isOrderPage);
+          if (userReview) {
+            // Já avaliado - mostrar as estrelinhas
+            return (
+              <RateButton
+                onPress={() =>
+                  navigation.navigate("ServicoDetalhes", {
+                    id: order.service.id,
+                  })
+                }
+                testID={`view-review-${order.id}`}
+                style={{ backgroundColor: "#f8f9fa" }}
+              >
+                <ButtonText style={{ color: "#422680" }}>
+                  Avaliado: {userReview.rating.toFixed(1)} ⭐
+                </ButtonText>
+              </RateButton>
+            );
+          } else if (isOrderPage) {
+            // Não avaliado ainda - mostrar botão de avaliar
             return (
               <RateButton
                 onPress={() =>

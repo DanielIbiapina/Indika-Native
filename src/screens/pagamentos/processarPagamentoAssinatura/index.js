@@ -33,6 +33,7 @@ const ProcessarPagamentoAssinatura = () => {
   const [error, setError] = useState(null);
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
+  const [isMonitoring, setIsMonitoring] = useState(false);
 
   const { plan } = route.params;
 
@@ -56,12 +57,8 @@ const ProcessarPagamentoAssinatura = () => {
         description: `Assinatura ${plan.title}`,
       };
 
-      console.log(
-        "Enviando dados para criação de assinatura:",
-        subscriptionData
-      );
+      console.log("Criando preferência de assinatura:", subscriptionData);
 
-      // Nova função no paymentService para assinaturas
       const response = await paymentService.createSubscriptionPreference(
         subscriptionData
       );
@@ -70,6 +67,7 @@ const ProcessarPagamentoAssinatura = () => {
         throw new Error("URL do checkout não encontrada na resposta");
       }
 
+      console.log("Preferência criada com sucesso:", response.data.id);
       setCheckoutUrl(response.data.init_point);
     } catch (error) {
       console.error("Erro ao criar preferência de assinatura:", error);
@@ -93,35 +91,73 @@ const ProcessarPagamentoAssinatura = () => {
     }
   };
 
-  const handleSubscriptionStatus = async (status) => {
-    setPaymentStatus(status);
+  const startMonitoring = () => {
+    if (isMonitoring) return;
 
-    if (status.status === "approved" || status.status === "active") {
-      Alert.alert(
-        "Assinatura Ativada",
-        "Sua assinatura foi ativada com sucesso!",
-        [{ text: "OK", onPress: () => navigation.navigate("Assinaturas") }]
-      );
-    } else if (status.status === "rejected" || status.status === "cancelled") {
-      Alert.alert(
-        "Falha na Assinatura",
-        "Não foi possível processar sua assinatura",
-        [
-          { text: "Tentar Novamente", onPress: createSubscriptionPreference },
-          { text: "Voltar", onPress: () => navigation.goBack() },
-        ]
-      );
-    }
+    setIsMonitoring(true);
+    console.log("Iniciando monitoramento da assinatura...");
+
+    paymentService.monitorSubscriptionStatus((status) => {
+      console.log("Status recebido:", status);
+      setPaymentStatus(status);
+
+      if (status.success === true) {
+        Alert.alert(
+          "Assinatura Ativada! 🎉",
+          "Sua assinatura foi ativada com sucesso!",
+          [
+            {
+              text: "Continuar",
+              onPress: () => {
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: "TabNavigator" }],
+                });
+                navigation.navigate("Assinaturas");
+              },
+            },
+          ]
+        );
+      } else if (status.success === false) {
+        Alert.alert(
+          "Falha na Assinatura",
+          status.message || "Não foi possível processar sua assinatura",
+          [
+            { text: "Tentar Novamente", onPress: createSubscriptionPreference },
+            { text: "Voltar", onPress: () => navigation.goBack() },
+          ]
+        );
+      }
+
+      setIsMonitoring(false);
+    });
   };
 
   const handleNavigationStateChange = (navState) => {
-    // Verificar URLs de redirecionamento que indicam sucesso/falha
-    if (navState.url.includes("/subscription/success")) {
-      // Iniciar monitoramento do status da assinatura
-      paymentService.monitorSubscriptionStatus(
-        plan.id,
-        handleSubscriptionStatus
-      );
+    console.log("Navegação mudou:", navState.url);
+
+    // Verificar URLs que indicam que o usuário foi redirecionado
+    if (
+      navState.url.includes("mercadopago.com") &&
+      (navState.url.includes("/checkout/") || navState.url.includes("/v1/"))
+    ) {
+      console.log("Usuário está no checkout do MercadoPago");
+
+      if (!isMonitoring) {
+        // Aguardar um pouco antes de começar o monitoramento
+        setTimeout(() => {
+          startMonitoring();
+        }, 2000);
+      }
+    }
+
+    // URLs de retorno (se configuradas)
+    if (
+      navState.url.includes("/subscription/success") ||
+      navState.url.includes("/subscription/approved")
+    ) {
+      console.log("Pagamento aparentemente aprovado, iniciando monitoramento");
+      startMonitoring();
     }
   };
 
@@ -131,11 +167,30 @@ const ProcessarPagamentoAssinatura = () => {
     </LoaderContainer>
   );
 
-  // Resto da implementação similar à tela ProcessarPagamento...
+  if (loading) {
+    return (
+      <Container>
+        <LoadingIndicator />
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container>
+        <ErrorContainer>
+          <ErrorText>{error}</ErrorText>
+          <RetryButton onPress={createSubscriptionPreference}>
+            <RetryButtonText>Tentar Novamente</RetryButtonText>
+          </RetryButton>
+        </ErrorContainer>
+      </Container>
+    );
+  }
 
   return (
     <Container>
-      <ServiceCard>
+      {/*<ServiceCard>
         <ServiceTitle>Assinatura {plan.title}</ServiceTitle>
         <PriceContainer>
           <PriceLabel>Valor da assinatura</PriceLabel>
@@ -155,17 +210,24 @@ const ProcessarPagamentoAssinatura = () => {
             </RecurrenceText>
           </RecurrenceInfo>
         </PriceContainer>
-      </ServiceCard>
+      </ServiceCard>*/}
 
       {paymentStatus && (
         <PaymentStatus
-          status={paymentStatus.status}
+          status={
+            paymentStatus.success === true
+              ? "approved"
+              : paymentStatus.success === false
+              ? "rejected"
+              : "pending"
+          }
           amount={plan.price}
           isSubscription={true}
+          message={paymentStatus.message}
         />
       )}
 
-      {checkoutUrl && !paymentStatus && (
+      {checkoutUrl && (
         <WebViewContainer>
           <WebView
             source={{
@@ -184,8 +246,26 @@ const ProcessarPagamentoAssinatura = () => {
             thirdPartyCookiesEnabled={true}
             sharedCookiesEnabled={true}
             cacheEnabled={false}
+            onError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.log("WebView error: ", nativeEvent);
+            }}
+            onHttpError={(syntheticEvent) => {
+              const { nativeEvent } = syntheticEvent;
+              console.log("WebView HTTP error: ", nativeEvent);
+            }}
+            injectedJavaScript={`
+              setTimeout(() => {
+                window.ReactNativeWebView.postMessage('timeout');
+              }, 30000);
+            `}
+            onMessage={(event) => {
+              if (event.nativeEvent.data === "timeout") {
+                console.log("WebView timeout - recarregando...");
+                // Pode implementar reload se necessário
+              }
+            }}
             style={{ flex: 1 }}
-            // Código JavaScript injetado
           />
         </WebViewContainer>
       )}

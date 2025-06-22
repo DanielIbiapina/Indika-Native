@@ -20,11 +20,17 @@ const CommunityCard = ({
   image,
   description,
   categories,
+  width = 280, // ← Valor padrão
+  height = 280, // ← Valor padrão
 }) => {
   const navigation = useNavigation();
 
   return (
-    <Card onPress={() => navigation.navigate("ComunidadeDetalhes", { id })}>
+    <Card
+      width={width}
+      height={height}
+      onPress={() => navigation.navigate("ComunidadeDetalhes", { id })}
+    >
       <CommunityImage source={{ uri: image }} />
       <Content>
         <Name>{name}</Name>

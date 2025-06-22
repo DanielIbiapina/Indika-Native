@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Alert, ActivityIndicator, View } from "react-native";
+import { Alert, ActivityIndicator, View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/authContext";
@@ -145,6 +145,10 @@ import {
   ClientRequestNoteText,
   ClientRequestFooter,
   ClientRequestDate,
+  UserReviewBadge,
+  UserReviewBadgeText,
+  UserReviewBadgeIcon,
+  UserReviewRating,
 } from "./styles";
 import QuotationModal from "../../components/quotationModal";
 import ErrorView from "../../components/errorView";
@@ -154,6 +158,7 @@ import { generateQuotationMessage } from "../../utils/generateQuotationMessage";
 import { messageService } from "../../services/messageService";
 import { chatService } from "../../services/chatService";
 import { paymentService } from "../../services/paymentService";
+import { reviewService } from "../../services/reviewService";
 
 const PedidoDetalhes = ({ route }) => {
   const { orderId } = route.params;
@@ -166,12 +171,16 @@ const PedidoDetalhes = ({ route }) => {
   const [error, setError] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [quotationHistory, setQuotationHistory] = useState([]);
+  const [userReviews, setUserReviews] = useState([]);
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState("details");
 
   useEffect(() => {
     loadOrderDetails();
-  }, [orderId]);
+    if (user?.id) {
+      loadUserReviews();
+    }
+  }, [orderId, user?.id]);
 
   useEffect(() => {
     if (activeTab === "history") {
@@ -221,6 +230,18 @@ const PedidoDetalhes = ({ route }) => {
       console.error("Erro ao carregar histórico:", error);
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const loadUserReviews = async () => {
+    if (!user?.id) return;
+
+    try {
+      const reviews = await reviewService.listByUser(user.id);
+      setUserReviews(reviews);
+    } catch (error) {
+      console.error("Erro ao carregar avaliações do usuário:", error);
+      setUserReviews([]);
     }
   };
 
@@ -896,96 +917,135 @@ const PedidoDetalhes = ({ route }) => {
     </Card>
   );
 
-  const renderServiceInfo = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>Informações do Serviço</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ServiceHeaderSection>
-          <ServiceImageContainer>
-            <ServiceImage
-              source={{
-                uri:
-                  activeOrder?.service?.images?.[0] ||
-                  "https://via.placeholder.com/300x150",
-              }}
-            />
-          </ServiceImageContainer>
-          <ServiceHeaderInfo>
-            <ServiceTitle>{activeOrder?.service?.title}</ServiceTitle>
-            <CategoryBadge>
-              <CategoryText>{activeOrder?.service?.category}</CategoryText>
-            </CategoryBadge>
-          </ServiceHeaderInfo>
-        </ServiceHeaderSection>
+  const renderServiceInfo = () => {
+    // Verificar se já existe uma avaliação para este pedido
+    const userReview = !isProvider
+      ? userReviews?.reviews?.find(
+          (r) => r.orderId === activeOrder.id && r.reviewerId === user?.id
+        )
+      : null;
 
-        <ServiceDetailsGrid>
-          {activeOrder?.address && (
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Informações do Serviço</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ServiceHeaderSection>
+            <ServiceImageContainer>
+              <ServiceImage
+                source={{
+                  uri:
+                    activeOrder?.service?.images?.[0] ||
+                    "https://via.placeholder.com/300x150",
+                }}
+              />
+            </ServiceImageContainer>
+
+            <ServiceHeaderInfo>
+              <ServiceTitle>{activeOrder?.service?.title}</ServiceTitle>
+              <CategoryBadge>
+                <CategoryText>{activeOrder?.service?.category}</CategoryText>
+              </CategoryBadge>
+            </ServiceHeaderInfo>
+          </ServiceHeaderSection>
+
+          <ServiceDetailsGrid>
+            {activeOrder?.address && (
+              <ServiceDetailItem>
+                <ServiceDetailIcon>
+                  <Ionicons
+                    name="location"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </ServiceDetailIcon>
+                <ServiceDetailContent>
+                  <ServiceDetailLabel>Local</ServiceDetailLabel>
+                  <ServiceDetailValue>
+                    {activeOrder?.address}
+                  </ServiceDetailValue>
+                </ServiceDetailContent>
+              </ServiceDetailItem>
+            )}
+
             <ServiceDetailItem>
               <ServiceDetailIcon>
                 <Ionicons
-                  name="location"
+                  name="person"
                   size={20}
                   color={theme.colors.primary}
                 />
               </ServiceDetailIcon>
               <ServiceDetailContent>
-                <ServiceDetailLabel>Local</ServiceDetailLabel>
-                <ServiceDetailValue>{activeOrder?.address}</ServiceDetailValue>
+                <ServiceDetailLabel>Solicitado por</ServiceDetailLabel>
+                <ServiceDetailValue>
+                  {activeOrder?.client?.name || "Cliente"}
+                </ServiceDetailValue>
               </ServiceDetailContent>
             </ServiceDetailItem>
+
+            <ServiceDetailItem>
+              <ServiceDetailIcon>
+                <Ionicons
+                  name="calendar-clear"
+                  size={20}
+                  color={theme.colors.primary}
+                />
+              </ServiceDetailIcon>
+              <ServiceDetailContent>
+                <ServiceDetailLabel>Data da solicitação</ServiceDetailLabel>
+                <ServiceDetailValue>
+                  {formatDateTime(activeOrder?.createdAt)}
+                </ServiceDetailValue>
+              </ServiceDetailContent>
+            </ServiceDetailItem>
+
+            {/* Sua avaliação com cuidado para textos longos */}
+            {userReview && (
+              <ServiceDetailItem>
+                <ServiceDetailIcon>
+                  <Ionicons name="star" size={20} color="#FFD700" />
+                </ServiceDetailIcon>
+                <ServiceDetailContent>
+                  <ServiceDetailLabel>Sua avaliação</ServiceDetailLabel>
+                  <ServiceDetailValue>
+                    ⭐ {userReview.rating.toFixed(1)}
+                    {userReview.comment && (
+                      <>
+                        {"\n"}
+                        {userReview.comment.length > 35
+                          ? `"${userReview.comment.substring(0, 35)}..."`
+                          : `"${userReview.comment}"`}
+                      </>
+                    )}
+                  </ServiceDetailValue>
+                </ServiceDetailContent>
+              </ServiceDetailItem>
+            )}
+          </ServiceDetailsGrid>
+
+          {activeOrder?.description && (
+            <ClientObservationsCard>
+              <ClientObservationsHeader>
+                <Ionicons
+                  name="chatbubble-ellipses"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+                <ClientObservationsTitle>
+                  Observações do Cliente
+                </ClientObservationsTitle>
+              </ClientObservationsHeader>
+              <ClientObservationsText>
+                {activeOrder?.description}
+              </ClientObservationsText>
+            </ClientObservationsCard>
           )}
-
-          <ServiceDetailItem>
-            <ServiceDetailIcon>
-              <Ionicons name="person" size={20} color={theme.colors.primary} />
-            </ServiceDetailIcon>
-            <ServiceDetailContent>
-              <ServiceDetailLabel>Solicitado por</ServiceDetailLabel>
-              <ServiceDetailValue>
-                {activeOrder?.client?.name || "Cliente"}
-              </ServiceDetailValue>
-            </ServiceDetailContent>
-          </ServiceDetailItem>
-
-          <ServiceDetailItem>
-            <ServiceDetailIcon>
-              <Ionicons
-                name="calendar-clear"
-                size={20}
-                color={theme.colors.primary}
-              />
-            </ServiceDetailIcon>
-            <ServiceDetailContent>
-              <ServiceDetailLabel>Data da solicitação</ServiceDetailLabel>
-              <ServiceDetailValue>
-                {formatDateTime(activeOrder?.createdAt)}
-              </ServiceDetailValue>
-            </ServiceDetailContent>
-          </ServiceDetailItem>
-        </ServiceDetailsGrid>
-
-        {activeOrder?.description && (
-          <ClientObservationsCard>
-            <ClientObservationsHeader>
-              <Ionicons
-                name="chatbubble-ellipses"
-                size={18}
-                color={theme.colors.primary}
-              />
-              <ClientObservationsTitle>
-                Observações do Cliente
-              </ClientObservationsTitle>
-            </ClientObservationsHeader>
-            <ClientObservationsText>
-              {activeOrder?.description}
-            </ClientObservationsText>
-          </ClientObservationsCard>
-        )}
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderHeader = () => (
     <></>
@@ -1090,24 +1150,38 @@ const PedidoDetalhes = ({ route }) => {
     }
 
     if (!isProvider && activeOrder?.status === "PAID") {
-      return (
-        <StickyFooter>
-          <ActionButton
-            variant="primary"
-            onPress={() =>
-              navigation.navigate("ServicoDetalhes", {
-                id: activeOrder.service.id,
-                orderId: activeOrder.id, // Para saber que vem de um pedido concluído
-              })
-            }
-          >
-            <Ionicons name="star-outline" size={20} color="#fff" />
-            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
-              ⭐ Avaliar Serviço
-            </ActionButtonText>
-          </ActionButton>
-        </StickyFooter>
+      // Verificar se já existe uma avaliação para este pedido
+      const userReview = userReviews?.reviews?.find(
+        (r) => r.orderId === activeOrder.id && r.reviewerId === user?.id
       );
+
+      // Se já avaliado, não mostrar footer (a informação já está no badge)
+      if (userReview) {
+        return null;
+      } else {
+        // Não avaliado ainda - mostrar botão de avaliar
+        return (
+          <StickyFooter>
+            <ActionButton
+              variant="primary"
+              onPress={() =>
+                navigation.navigate("ServicoDetalhes", {
+                  id: activeOrder.service.id,
+                  orderId: activeOrder.id,
+                })
+              }
+            >
+              <Ionicons name="star-outline" size={20} color="#fff" />
+              <ActionButtonText
+                hasIcon
+                style={{ minWidth: 100, minHeight: 20 }}
+              >
+                ⭐ Avaliar Serviço
+              </ActionButtonText>
+            </ActionButton>
+          </StickyFooter>
+        );
+      }
     }
 
     return null;

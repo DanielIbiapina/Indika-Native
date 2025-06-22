@@ -265,63 +265,92 @@ export const paymentService = {
     }
   },
 
-  // Monitorar status da assinatura
-  monitorSubscriptionStatus: async (subscriptionId, onStatusChange) => {
+  // Monitorar status da assinatura com polling melhorado
+  monitorSubscriptionStatus: async (onStatusChange) => {
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = 20; // Aumentar tentativas para 1 minuto
     const interval = 3000; // 3 segundos
 
     const checkStatus = async () => {
       try {
-        const status = await paymentService.getSubscription();
+        const subscription = await paymentService.getSubscription();
 
-        if (
-          status &&
-          (status.status === "ACTIVE" || status.status === "APPROVED")
-        ) {
-          onStatusChange(status);
+        console.log("Status da assinatura:", subscription);
+
+        if (subscription && subscription.status === "ACTIVE") {
+          onStatusChange({
+            ...subscription,
+            success: true,
+            message: "Assinatura ativada com sucesso!",
+          });
           return true;
         }
 
         if (
-          status &&
-          (status.status === "CANCELLED" || status.status === "REJECTED")
+          subscription &&
+          (subscription.status === "CANCELLED" ||
+            subscription.status === "REJECTED")
         ) {
-          onStatusChange(status);
+          onStatusChange({
+            ...subscription,
+            success: false,
+            message: "Assinatura cancelada ou rejeitada",
+          });
           return true;
+        }
+
+        // Verificar se ainda está pendente
+        if (subscription && subscription.status === "PENDING") {
+          onStatusChange({
+            ...subscription,
+            success: null,
+            message: "Processando pagamento...",
+          });
         }
 
         return false;
       } catch (error) {
         console.error("Erro ao monitorar status da assinatura:", error);
-        return false;
+
+        // Se erro 404, significa que não há assinatura ainda
+        if (error.response?.status === 404) {
+          return false;
+        }
+
+        // Outro erro, reportar
+        onStatusChange({
+          success: false,
+          message: "Erro ao verificar status da assinatura",
+        });
+        return true;
       }
     };
 
     return new Promise((resolve) => {
       const intervalId = setInterval(async () => {
         attempts++;
+        console.log(
+          `Tentativa ${attempts}/${maxAttempts} de verificar assinatura`
+        );
 
         const shouldStop = await checkStatus();
+
         if (shouldStop || attempts >= maxAttempts) {
           clearInterval(intervalId);
+
+          if (attempts >= maxAttempts) {
+            // Timeout - não conseguiu verificar
+            onStatusChange({
+              success: null,
+              message:
+                "Tempo limite atingido. Verifique sua assinatura na tela principal.",
+            });
+          }
+
           resolve();
         }
       }, interval);
     });
-  },
-
-  // Método para criar assinatura de teste (sem processamento de pagamento)
-  createTestSubscription: async (planData) => {
-    try {
-      const response = await api.post("/payments/subscription/test", {
-        planType: planData.planType,
-        price: planData.price,
-      });
-      return response.data;
-    } catch (error) {
-      handleApiError(error);
-    }
   },
 
   // Buscar método de pagamento configurado

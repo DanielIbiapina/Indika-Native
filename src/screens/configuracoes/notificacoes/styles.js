@@ -72,3 +72,22 @@ export const SaveButtonText = styled.Text`
   font-size: 16px;
   font-weight: 500;
 `;
+
+// ✅ NOVO: Botão de teste
+export const TestButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9ff;
+  border: 1px solid ${(props) => props.theme.colors.primary};
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 8px 0;
+`;
+
+export const TestButtonText = styled.Text`
+  color: ${(props) => props.theme.colors.primary};
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 8px;
+`;

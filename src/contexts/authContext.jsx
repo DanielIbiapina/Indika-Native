@@ -34,9 +34,12 @@ export const AuthProvider = ({ children }) => {
     loadStoredData();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/auth/login", {
+        identifier,
+        password,
+      });
 
       const { user, token } = response.data;
 

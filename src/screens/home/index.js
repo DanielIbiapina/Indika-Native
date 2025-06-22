@@ -53,16 +53,77 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // ✅ NOVO: Estados para busca
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredServices, setFilteredServices] = useState({});
+  const [filteredCategories, setFilteredCategories] = useState([]);
+  const [allServices, setAllServices] = useState([]); // Lista completa para busca
+
   // Tutorial state
   const [tutorialStep, setTutorialStep] = useState(0);
   const { startTutorial, endTutorial, shouldShowTutorial, resetTutorials } =
     useTutorial();
+
+  // ✅ NOVO: Função de busca
+  const performSearch = (query) => {
+    if (!query.trim()) {
+      // Se não há busca, mostrar tudo
+      setFilteredServices(services);
+      setFilteredCategories(categories);
+      return;
+    }
+
+    const normalizedQuery = query.toLowerCase().trim();
+
+    // Filtrar serviços
+    const filtered = allServices.filter(
+      (service) =>
+        service.title.toLowerCase().includes(normalizedQuery) ||
+        service.description.toLowerCase().includes(normalizedQuery) ||
+        service.category.toLowerCase().includes(normalizedQuery) ||
+        service.provider.name.toLowerCase().includes(normalizedQuery)
+    );
+
+    // Agrupar serviços filtrados por categoria
+    const filteredByCategory = filtered.reduce((acc, service) => {
+      if (!acc[service.category]) {
+        acc[service.category] = [];
+      }
+      acc[service.category].push(service);
+      return acc;
+    }, {});
+
+    // Filtrar categorias que têm serviços
+    const categoriesWithResults = categories.filter(
+      (category) => filteredByCategory[category.id]
+    );
+
+    setFilteredServices(filteredByCategory);
+    setFilteredCategories(categoriesWithResults);
+  };
+
+  // ✅ NOVO: Handler da busca
+  const handleSearch = (text) => {
+    setSearchQuery(text);
+    performSearch(text);
+  };
+
+  // ✅ NOVO: Função para navegar para resultados completos
+  const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      navigation.navigate("ResultadosBusca", {
+        query: searchQuery,
+        services: filteredServices,
+      });
+    }
+  };
 
   const fetchData = async () => {
     setRefreshing(true);
     try {
       const servicesData = await serviceService.list({ limit: 100 });
       processServicesData(servicesData);
+      setAllServices(servicesData); // ✅ NOVO: Guardar lista completa
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
     } finally {
@@ -90,6 +151,8 @@ const Home = () => {
 
     setCategories(uniqueCategories);
     setServices(servicesByCategory);
+    setFilteredCategories(uniqueCategories); // ✅ NOVO: Inicializar filtrados
+    setFilteredServices(servicesByCategory); // ✅ NOVO: Inicializar filtrados
   };
 
   useEffect(() => {
@@ -153,6 +216,29 @@ const Home = () => {
     setTimeout(() => {
       startTutorial("home");
     }, 500);
+  };
+
+  // ✅ MOVIDO: Função renderSearchResults ANTES do if (loading)
+  const renderSearchResults = () => {
+    if (!searchQuery.trim()) return null;
+
+    const totalResults = Object.values(filteredServices).reduce(
+      (total, services) => total + services.length,
+      0
+    );
+
+    return (
+      <SectionTitle style={{ marginTop: 16 }}>
+        <SectionTitleText>
+          {totalResults} resultado(s) para "{searchQuery}"
+        </SectionTitleText>
+        {totalResults > 0 && (
+          <TouchableOpacity onPress={handleSearchSubmit}>
+            <ViewAllText>Ver todos</ViewAllText>
+          </TouchableOpacity>
+        )}
+      </SectionTitle>
+    );
   };
 
   // Renderizar o tutorial
@@ -320,6 +406,11 @@ const Home = () => {
         />
       }
       title={item.name}
+      onPress={() =>
+        navigation.navigate("ServicosPorCategoria", {
+          category: item.name,
+        })
+      }
     />
   );
 
@@ -387,17 +478,51 @@ const Home = () => {
             Boas-vindas{user ? `, ${user.name}` : ""}
           </Title>
 
-          <SearchBar placeholder="O que você precisa?" />
+          <SearchBar
+            placeholder="O que você precisa?"
+            value={searchQuery}
+            onChangeText={handleSearch}
+            onSubmit={handleSearchSubmit}
+          />
+
+          {/* ✅ CORRIGIDO: Agora a função está definida antes */}
+          {renderSearchResults()}
 
           <CategoryList
             horizontal
-            data={categories}
+            data={filteredCategories}
             keyExtractor={(item) => item.id}
             renderItem={renderCategoryItem}
             showsHorizontalScrollIndicator={false}
           />
 
-          {Object.entries(services).map(renderServiceSection)}
+          {Object.entries(filteredServices).map(renderServiceSection)}
+
+          {searchQuery.trim() && Object.keys(filteredServices).length === 0 && (
+            <View style={{ alignItems: "center", marginTop: 40 }}>
+              <Ionicons name="search-outline" size={48} color="#ccc" />
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#666",
+                  marginTop: 16,
+                  textAlign: "center",
+                }}
+              >
+                Nenhum serviço encontrado para "{searchQuery}"
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: "#999",
+                  marginTop: 8,
+                  textAlign: "center",
+                }}
+              >
+                Tente buscar com outras palavras-chave
+              </Text>
+            </View>
+          )}
 
           {/* Botão DEV para resetar tutorial - Remover em produção */}
           {__DEV__ && (

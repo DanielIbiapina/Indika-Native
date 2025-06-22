@@ -36,21 +36,21 @@ const PLANS = [
     id: "monthly",
     type: "MONTHLY",
     title: "Mensal",
-    price: 29.9,
+    price: 4.9,
     description: "Acesso a todas as funcionalidades por 1 mês",
   },
   {
     id: "quarterly",
     type: "QUARTERLY",
     title: "Trimestral",
-    price: 79.9,
+    price: 6.9,
     description: "Acesso a todas as funcionalidades por 3 meses",
   },
   {
     id: "annual",
     type: "ANNUAL",
     title: "Anual",
-    price: 299.9,
+    price: 7.9,
     description: "Acesso a todas as funcionalidades por 12 meses",
   },
 ];
@@ -89,7 +89,7 @@ const Assinaturas = () => {
         [
           { text: "Cancelar", style: "cancel" },
           {
-            /*text: "Continuar",
+            text: "Continuar",
             onPress: () => {
               // Navegar para tela de pagamento com os dados do plano
               navigation.navigate("ProcessarPagamentoAssinatura", {
@@ -97,30 +97,7 @@ const Assinaturas = () => {
                   ...plan,
                   isSubscription: true,
                 },
-              });*/
-            text: "Confirmar",
-            onPress: async () => {
-              try {
-                // Usar o método de teste em vez do fluxo completo
-                const result = await paymentService.createTestSubscription({
-                  planType: plan.type,
-                  price: plan.price,
-                });
-
-                Alert.alert("Sucesso", "Assinatura realizada com sucesso!", [
-                  {
-                    text: "OK",
-                    onPress: () => loadSubscription(),
-                  },
-                ]);
-              } catch (error) {
-                Alert.alert(
-                  "Erro",
-                  error.message || "Não foi possível realizar a assinatura"
-                );
-              } finally {
-                setSubscribing(false);
-              }
+              });
             },
           },
         ]
@@ -130,7 +107,7 @@ const Assinaturas = () => {
         "Erro",
         error.message || "Não foi possível iniciar a assinatura"
       );
-      //} finally {
+    } finally {
       setSubscribing(false);
     }
   };

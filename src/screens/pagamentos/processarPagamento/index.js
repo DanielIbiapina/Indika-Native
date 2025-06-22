@@ -3,7 +3,10 @@ import { ActivityIndicator, Alert } from "react-native";
 import { WebView } from "react-native-webview";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { paymentService } from "../../../services/paymentService";
+import {
+  PAYMENT_STATUS,
+  paymentService,
+} from "../../../services/paymentService";
 import { useTheme } from "styled-components/native";
 import {
   Container,

@@ -1,10 +1,8 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
 
 // Criação da instância do Axios
-// Adicione no início do seu App.js ou index.js
-console.log(process.env.EXPO_API_URL);
+console.log("API URL:", process.env.EXPO_API_URL);
 const api = axios.create({
   baseURL: process.env.EXPO_API_URL, // Ajuste conforme sua configuração de ambiente
 });
@@ -29,10 +27,13 @@ api.interceptors.response.use(
   async (error) => {
     if (error.response?.status === 401) {
       try {
+        console.log("Token expirado, limpando dados...");
         await AsyncStorage.removeItem("@App:token");
         await AsyncStorage.removeItem("@App:user");
-        const navigation = useNavigation(); // Use react-navigation para redirecionar
-        navigation.navigate("Entrar"); // Ajuste o nome da tela de login
+
+        // Não podemos usar useNavigation aqui, então vamos apenas logar
+        // A navegação será tratada pelo contexto de auth
+        console.log("Usuário deslogado por token inválido");
       } catch (err) {
         console.error("Erro ao limpar dados do AsyncStorage:", err);
       }

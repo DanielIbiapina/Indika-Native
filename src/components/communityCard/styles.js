@@ -4,8 +4,8 @@ export const Card = styled.TouchableOpacity`
   background: ${({ theme }) => theme.colors.background};
   border-radius: 12px;
   overflow: hidden;
-  width: 280px;
-  height: 280px;
+  width: ${(props) => props.width || 280}px;
+  height: ${(props) => props.height || 280}px;
   elevation: 4;
   margin: 4px 8px;
 `;
