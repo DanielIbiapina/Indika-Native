@@ -27,6 +27,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useOrder } from "../../contexts/orderContext";
 import { paymentService } from "../../services/paymentService";
+import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
 
 const getStatusIcon = (status) => {
   switch (status) {
@@ -137,35 +138,43 @@ const QuotationMessage = ({
   const handleConfirmPayment = async () => {
     try {
       setLoading(true);
+      console.log("=== CONFIRMAR PAGAMENTO NO CHAT ===");
 
-      const orderData =
-        activeOrder || (await getOrderDetails(quotationData.orderId));
+      // ✅ NOVO: Usar a mesma lógica que funciona no pedidoDetalhes
+      const allPayments = await paymentService.getPaymentHistory();
+      console.log("Todos os pagamentos:", allPayments);
 
-      if (!orderData) {
-        throw new Error("Não foi possível obter os dados do pedido");
-      }
+      // Encontrar o pagamento deste pedido
+      const orderIdToUse = quotationData.orderId || orderId;
+      const orderPayment = allPayments.find(
+        (payment) => payment.orderId === orderIdToUse
+      );
 
-      // Buscar o pagamento mais recente
-      const latestPayment = orderData.payments?.[0] || orderData.payment;
-
-      if (!latestPayment) {
-        Alert.alert("Erro", "Nenhum pagamento encontrado para confirmar");
+      if (!orderPayment) {
+        Alert.alert("Erro", "Nenhum pagamento encontrado para este pedido");
         return;
       }
 
+      console.log("Payment encontrado:", orderPayment);
+
       // Confirmar recebimento
-      await paymentService.confirmDirectPayment(latestPayment.id);
+      await paymentService.confirmDirectPayment(orderPayment.id);
       Alert.alert("Sucesso", "Pagamento confirmado com sucesso!");
 
-      // Atualizar dados do pedido se possível
+      // ✅ NOVO: Atualizar dados como no pedidoDetalhes
       if (onRefresh) {
         await onRefresh();
+      }
+
+      // ✅ NOVO: Emitir evento para atualizar outras telas
+      if (currentOrder) {
+        emitOrderStatusUpdated(currentOrder);
       }
     } catch (error) {
       console.error("Erro ao confirmar pagamento:", error);
       Alert.alert(
         "Erro",
-        error.message || "Não foi possível confirmar o recebimento"
+        error.message || "Não foi possível confirmar o pagamento"
       );
     } finally {
       setLoading(false);

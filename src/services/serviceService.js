@@ -56,9 +56,14 @@ export const serviceService = {
     }
   },
 
-  // Criar um novo serviço
-  create: async (formData) => {
+  // Criar/atualizar um serviço
+  create: async (formData, serviceId = null) => {
     try {
+      // Se tem serviceId, adicionar ao FormData
+      if (serviceId) {
+        formData.append("serviceId", serviceId);
+      }
+
       const response = await api.post("/services", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -66,7 +71,7 @@ export const serviceService = {
       });
       return response.data;
     } catch (error) {
-      throw handleError(error, "Erro ao criar serviço");
+      throw handleError(error, "Erro ao salvar serviço");
     }
   },
 

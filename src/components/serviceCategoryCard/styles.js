@@ -14,7 +14,7 @@ export const Card = styled.TouchableOpacity`
   flex-direction: column;
   margin-bottom: 16px;
   width: ${(screenWidth - 48) / 2}px;
-  height: 280px;
+  height: 300px; /* ✅ AUMENTADO: para acomodar subcategorias */
 `;
 
 export const ServiceImage = styled.Image`
@@ -34,6 +34,28 @@ export const Title = styled.Text`
   font-weight: 500;
   color: ${({ theme }) => theme.colors.text.primary};
   height: 40px;
+`;
+
+// ✅ NOVO: Estilos para subcategorias
+export const SubcategoriesContainer = styled.View`
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0;
+`;
+
+export const SubcategoryTag = styled.View`
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  padding: 2px 6px;
+  border-width: 1px;
+  border-color: #e0e0e0;
+`;
+
+export const SubcategoryTagText = styled.Text`
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
 `;
 
 export const Rating = styled.View`

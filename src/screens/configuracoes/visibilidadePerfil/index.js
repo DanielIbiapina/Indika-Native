@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+/*import React, { useState, useEffect } from "react";
 import { Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { userService } from "../../../services/userService";
@@ -187,3 +187,4 @@ const VisibilidadePerfil = () => {
 };
 
 export default VisibilidadePerfil;
+*/

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ScrollView,
   ActivityIndicator,
@@ -76,6 +76,9 @@ import { useOrder } from "../../contexts/orderContext";
 import { paymentService } from "../../services/paymentService";
 import { useTutorial } from "../../contexts/tutorialContext";
 import { friendshipService } from "../../services/friendshipService";
+import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
+import { useBadge } from "../../contexts/badgeContext";
+import { useFocusEffect } from "@react-navigation/native";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -121,10 +124,16 @@ const Profile = () => {
   const [friendRequests, setFriendRequests] = useState([]);
   const [loadingFriendRequests, setLoadingFriendRequests] = useState(false);
 
+  const { badges, refreshBadgesFromServer, clearBadge } = useBadge();
+
   useEffect(() => {
     loadProfileData();
     loadFriendRequests();
-  }, []);
+
+    if (user?.id) {
+      refreshBadgesFromServer();
+    }
+  }, [user]);
 
   useEffect(() => {
     switch (activeTab) {
@@ -311,7 +320,7 @@ const Profile = () => {
   };
 
   const handleEditService = (service) => {
-    navigation.navigate("EditarServico", { serviceId: service.id });
+    navigation.navigate("CriarServico", { serviceId: service.id });
   };
 
   const handleDeleteService = async (serviceId) => {
@@ -393,7 +402,7 @@ const Profile = () => {
 
   const handleServiceAction = async (serviceId, action) => {
     const actions = {
-      edit: () => navigation.navigate("EditarServico", { serviceId }),
+      edit: () => navigation.navigate("CriarServico", { serviceId }),
       delete: () => {
         Alert.alert(
           "Confirmar exclusão",
@@ -423,6 +432,15 @@ const Profile = () => {
 
   const handleCreateService = async () => {
     try {
+      // ✅ NOVO: Em modo desenvolvimento, pular verificação de assinatura
+      if (__DEV__) {
+        console.log(
+          "🔧 Modo desenvolvimento: pulando verificação de assinatura"
+        );
+        navigation.navigate("CriarServico");
+        return;
+      }
+
       // Buscar informações de assinatura diretamente do serviço de pagamento
       const subscription = await paymentService.getSubscription();
 
@@ -948,6 +966,55 @@ const Profile = () => {
       ]
     );
   };
+
+  useEffect(() => {
+    // 🎯 LISTENERS EXISTENTES
+    const handleServiceCreated = () => {
+      console.log("🎉 Novo serviço criado - atualizando Perfil");
+      loadMyServices();
+    };
+
+    const handleServiceUpdated = () => {
+      console.log("✏️ Serviço atualizado - atualizando Perfil");
+      loadMyServices();
+    };
+
+    // ✨ NOVO: Listener para quando pedido for criado
+    const handleOrderCreated = (orderData) => {
+      console.log("🎉 Novo pedido criado - atualizando solicitações recebidas");
+      // Se for uma solicitação para este prestador, atualizar
+      if (orderData.providerId === user?.id) {
+        loadReceivedOrders();
+      }
+    };
+
+    // Registrar listeners
+    eventEmitter.on(EVENTS.SERVICE_CREATED, handleServiceCreated);
+    eventEmitter.on(EVENTS.SERVICE_UPDATED, handleServiceUpdated);
+    eventEmitter.on(EVENTS.ORDER_CREATED, handleOrderCreated);
+
+    // 🧹 CLEANUP
+    return () => {
+      eventEmitter.removeListener(EVENTS.SERVICE_CREATED, handleServiceCreated);
+      eventEmitter.removeListener(EVENTS.SERVICE_UPDATED, handleServiceUpdated);
+      eventEmitter.removeListener(EVENTS.ORDER_CREATED, handleOrderCreated);
+    };
+  }, [user?.id]);
+
+  // Limpar badge quando ver solicitações recebidas
+  const handleViewSolicitacoes = () => {
+    clearBadge("solicitacoes");
+    // ... lógica existente
+  };
+
+  // ADICIONAR - Novo useEffect para atualizar badges quando aba de solicitações for focada
+  useFocusEffect(
+    useCallback(() => {
+      if (activeTab === TABS.RECEIVED_ORDERS) {
+        clearBadge("solicitacoes");
+      }
+    }, [activeTab])
+  );
 
   if (loading) {
     return (

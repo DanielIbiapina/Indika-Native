@@ -1,238 +1,202 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Alert } from "react-native";
+import { Modal, Alert, Switch } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ModalContainer,
+  ModalOverlay,
   ModalContent,
+  Header,
   Title,
-  InputContainer,
+  CloseButton,
+  Form,
+  Field,
   Label,
-  Input,
-  PeriodSelector,
-  PeriodOption,
-  PeriodText,
+  PriceContainer,
+  CurrencySymbol,
+  PriceInput,
   DateButton,
   DateText,
-  ButtonsContainer,
-  ConfirmButton,
+  TimeToggle,
+  ToggleText,
+  PeriodButtons,
+  PeriodButton,
+  PeriodButtonText,
+  TextArea,
+  Actions,
+  SendButton,
   CancelButton,
   ButtonText,
 } from "./styles";
 
 const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
-  const [quotationData, setQuotationData] = useState({
-    price: initialData?.price || "",
-    scheduledDate: initialData?.scheduledDate
-      ? new Date(initialData.scheduledDate)
-      : new Date(),
-    period: initialData?.period || "morning",
-    specificTime: initialData?.specificTime || false,
-    description: initialData?.description || "",
-  });
+  const [price, setPrice] = useState("");
+  const [date, setDate] = useState(new Date());
+  const [useSpecificTime, setUseSpecificTime] = useState(false);
+  const [time, setTime] = useState(new Date());
+  const [period, setPeriod] = useState("morning");
+  const [notes, setNotes] = useState("");
 
-  // Resetar o estado quando o modal abrir com novos dados
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+
   useEffect(() => {
     if (isVisible && initialData) {
-      setQuotationData({
-        price: initialData.price || "",
-        scheduledDate: initialData.scheduledDate
+      setDate(
+        initialData.scheduledDate
           ? new Date(initialData.scheduledDate)
-          : new Date(),
-        period: initialData.period || "morning",
-        specificTime: initialData.specificTime || false,
-        description: initialData.description || "",
-      });
+          : new Date()
+      );
+      setUseSpecificTime(initialData.specificTime || false);
+      setPeriod(initialData.period || "morning");
+      if (initialData.scheduledTime) {
+        setTime(new Date(initialData.scheduledTime));
+      }
     }
   }, [isVisible, initialData]);
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const handleConfirm = () => {
-    try {
-      // Validar se o pedido está em estado que permite cotação
-      if (
-        initialData?.status &&
-        !["WAITING_QUOTE", "QUOTE_REJECTED"].includes(initialData.status)
-      ) {
-        Alert.alert("Erro", "Não é possível enviar orçamento neste momento");
-        return;
-      }
-
-      // Validar preço
-      if (!quotationData.price || parseFloat(quotationData.price) <= 0) {
-        Alert.alert("Erro", "Por favor, insira um preço válido");
-        return;
-      }
-
-      // Validar data
-      if (
-        !quotationData.scheduledDate ||
-        isNaN(quotationData.scheduledDate.getTime())
-      ) {
-        Alert.alert("Erro", "Por favor, selecione uma data válida");
-        return;
-      }
-
-      // Validar período
-      if (!quotationData.period) {
-        Alert.alert("Erro", "Por favor, selecione um período");
-        return;
-      }
-
-      // Formatar dados antes de enviar
-      const formattedData = {
-        price: parseFloat(quotationData.price),
-        scheduledDate: quotationData.scheduledDate.toISOString(),
-        period: quotationData.period,
-        specificTime: quotationData.specificTime || false,
-        description: quotationData.description || "",
-      };
-
-      onConfirm(formattedData);
-    } catch (error) {
-      console.error("Erro ao processar dados do orçamento:", error);
-      Alert.alert("Erro", "Não foi possível processar os dados do orçamento");
+  const handleSend = () => {
+    if (!price || parseFloat(price) <= 0) {
+      Alert.alert("Erro", "Informe um preço válido");
+      return;
     }
-  };
 
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
-    if (selectedDate && !isNaN(selectedDate.getTime())) {
-      setQuotationData((prev) => ({
-        ...prev,
-        scheduledDate: selectedDate,
-      }));
-    }
-  };
+    const data = {
+      price: parseFloat(price),
+      scheduledDate: date.toISOString(),
+      specificTime: useSpecificTime,
+      scheduledTime: useSpecificTime ? time.toISOString() : null,
+      period: useSpecificTime ? null : period,
+      description: notes,
+    };
 
-  const formatDate = (date) => {
-    try {
-      if (!date || isNaN(date.getTime())) {
-        return format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-      }
-      return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch (error) {
-      console.error("Erro ao formatar data:", error);
-      return format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    }
+    onConfirm(data);
   };
 
   return (
-    <Modal
-      visible={isVisible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <ModalContainer>
+    <Modal visible={isVisible} transparent animationType="slide">
+      <ModalOverlay>
         <ModalContent>
-          <Title>Gerar Orçamento</Title>
+          <Header>
+            <Title>Enviar Orçamento</Title>
+            <CloseButton onPress={onClose}>
+              <Ionicons name="close" size={20} color="#666" />
+            </CloseButton>
+          </Header>
 
-          <InputContainer>
-            <Label>Preço (R$)</Label>
-            <Input
-              keyboardType="decimal-pad"
-              value={quotationData.price}
-              onChangeText={(value) =>
-                setQuotationData((prev) => ({
-                  ...prev,
-                  price: value.replace(",", "."),
-                }))
-              }
-              placeholder="0,00"
-            />
-          </InputContainer>
+          <Form>
+            {/* Preço */}
+            <Field>
+              <Label>Preço do serviço</Label>
+              <PriceContainer>
+                <CurrencySymbol>R$</CurrencySymbol>
+                <PriceInput
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="decimal-pad"
+                  placeholder="0,00"
+                />
+              </PriceContainer>
+            </Field>
 
-          <InputContainer>
-            <Label>Data</Label>
-            <DateButton onPress={() => setShowDatePicker(true)}>
-              <DateText>{formatDate(quotationData.scheduledDate)}</DateText>
-            </DateButton>
-          </InputContainer>
+            {/* Data */}
+            <Field>
+              <Label>Data</Label>
+              <DateButton onPress={() => setShowDatePicker(true)}>
+                <DateText>
+                  {format(date, "dd/MM/yyyy", { locale: ptBR })}
+                </DateText>
+                <Ionicons name="calendar-outline" size={16} color="#666" />
+              </DateButton>
+            </Field>
 
-          <InputContainer>
-            <Label>Período</Label>
-            <PeriodSelector>
-              <PeriodOption
-                selected={quotationData.period === "morning"}
-                onPress={() =>
-                  setQuotationData((prev) => ({
-                    ...prev,
-                    period: "morning",
-                  }))
-                }
-              >
-                <PeriodText selected={quotationData.period === "morning"}>
-                  Manhã
-                </PeriodText>
-              </PeriodOption>
-              <PeriodOption
-                selected={quotationData.period === "afternoon"}
-                onPress={() =>
-                  setQuotationData((prev) => ({
-                    ...prev,
-                    period: "afternoon",
-                  }))
-                }
-              >
-                <PeriodText selected={quotationData.period === "afternoon"}>
-                  Tarde
-                </PeriodText>
-              </PeriodOption>
-              <PeriodOption
-                selected={quotationData.period === "night"}
-                onPress={() =>
-                  setQuotationData((prev) => ({
-                    ...prev,
-                    period: "night",
-                  }))
-                }
-              >
-                <PeriodText selected={quotationData.period === "night"}>
-                  Noite
-                </PeriodText>
-              </PeriodOption>
-            </PeriodSelector>
-          </InputContainer>
+            {/* Horário */}
+            <Field>
+              <TimeToggle>
+                <Switch
+                  value={useSpecificTime}
+                  onValueChange={setUseSpecificTime}
+                  trackColor={{ false: "#ccc", true: "#422680" }}
+                  thumbColor="#fff"
+                />
+                <ToggleText>Horário específico</ToggleText>
+              </TimeToggle>
 
-          <InputContainer>
-            <Label>Observações (opcional)</Label>
-            <Input
-              multiline
-              numberOfLines={4}
-              value={quotationData.description}
-              onChangeText={(value) =>
-                setQuotationData((prev) => ({
-                  ...prev,
-                  description: value,
-                }))
-              }
-              textAlignVertical="top"
-            />
-          </InputContainer>
+              {useSpecificTime ? (
+                <DateButton onPress={() => setShowTimePicker(true)}>
+                  <DateText>{format(time, "HH:mm")}</DateText>
+                  <Ionicons name="time-outline" size={16} color="#666" />
+                </DateButton>
+              ) : (
+                <PeriodButtons>
+                  {[
+                    { key: "morning", label: "Manhã" },
+                    { key: "afternoon", label: "Tarde" },
+                    { key: "night", label: "Noite" },
+                  ].map(({ key, label }) => (
+                    <PeriodButton
+                      key={key}
+                      active={period === key}
+                      onPress={() => setPeriod(key)}
+                    >
+                      <PeriodButtonText active={period === key}>
+                        {label}
+                      </PeriodButtonText>
+                    </PeriodButton>
+                  ))}
+                </PeriodButtons>
+              )}
+            </Field>
 
-          <ButtonsContainer>
-            <ConfirmButton onPress={handleConfirm}>
-              <ButtonText>Enviar Orçamento</ButtonText>
-            </ConfirmButton>
+            {/* Observações */}
+            <Field>
+              <Label>Observações (opcional)</Label>
+              <TextArea
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Detalhes do serviço..."
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+            </Field>
+          </Form>
+
+          <Actions>
             <CancelButton onPress={onClose}>
-              <ButtonText>Cancelar</ButtonText>
+              <ButtonText secondary>Cancelar</ButtonText>
             </CancelButton>
-          </ButtonsContainer>
-        </ModalContent>
+            <SendButton onPress={handleSend}>
+              <ButtonText>Enviar</ButtonText>
+            </SendButton>
+          </Actions>
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={quotationData.scheduledDate}
-            mode="date"
-            display="default"
-            onChange={handleDateChange}
-            minimumDate={new Date()}
-          />
-        )}
-      </ModalContainer>
+          {/* Pickers */}
+          {showDatePicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) setDate(selectedDate);
+              }}
+              minimumDate={new Date()}
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={time}
+              mode="time"
+              onChange={(event, selectedTime) => {
+                setShowTimePicker(false);
+                if (selectedTime) setTime(selectedTime);
+              }}
+            />
+          )}
+        </ModalContent>
+      </ModalOverlay>
     </Modal>
   );
 };

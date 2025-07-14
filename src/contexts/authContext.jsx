@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const formData = new FormData();
 
-      formData.append("name", `Amigos do ${userName.split(" ")[0]}`); // Usar só o primeiro nome
+      formData.append("name", `Amigos de ${userName.split(" ")[0]}`); // Usar só o primeiro nome
       formData.append(
         "description",
         `Comunidade de amigos pessoais do ${

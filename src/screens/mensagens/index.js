@@ -215,14 +215,15 @@ const Mensagens = () => {
   // Função para selecionar um chat
   const handleSelectChat = async (chat) => {
     console.log("handleSelectChat");
-    console.log("selectedChat", chat);
+    console.log("Chat recebido:", chat);
+    console.log("Participantes:", chat.participants);
+
     try {
       if (!chat || !chat.id) {
         console.error("Chat inválido para seleção");
         return;
       }
 
-      // Garantir que o chat tenha as propriedades necessárias
       const chatWithDefaults = {
         ...chat,
         orders: chat.orders || [],
@@ -231,14 +232,14 @@ const Mensagens = () => {
         currentOrderId: chat.currentOrderId || chat.orders?.[0]?.id || null,
       };
 
-      // Atualiza o chat selecionado
       setSelectedChat(chatWithDefaults);
 
-      // Melhor tratamento do nome do participante
+      // ✅ MELHORADO: Melhor tratamento do nome
+      const participant = chatWithDefaults.participants[0];
       const participantName =
-        chatWithDefaults.participants[0]?.name ||
-        chatWithDefaults.participants[0]?.username ||
-        "Usuário";
+        participant?.name || participant?.username || "Usuário";
+
+      console.log("Nome definido:", participantName); // ✅ NOVO: Log para debug
       setNameChat(participantName);
 
       setMessages([]); // Limpa as mensagens antes de carregar novas
@@ -376,33 +377,74 @@ const Mensagens = () => {
         console.error("ProviderId não fornecido para criar chat");
         return;
       }
-      console.log("providerId", providerId);
-      console.log("user.id", user.id);
 
       setLoading(true);
 
-      // Obter parâmetros de navegação
       const params = navigation
         .getState()
         .routes.find((r) => r.name === "Mensagens")?.params;
 
-      // Criar ou obter chat existente
       const chat = await chatService.createChat(providerId);
 
       if (!chat || !chat.id) {
         throw new Error("Chat inválido retornado do servidor");
       }
 
-      // Garantir que o chat tenha as propriedades necessárias
+      // ✅ NOVO: Detectar quem é o usuário logado para mostrar o participante correto
+      let participants = chat.participants || [];
+
+      if (!participants.length || !participants[0]?.name) {
+        if (params?.order) {
+          // ✅ LÓGICA CORRIGIDA: Verificar se é prestador ou cliente
+          const isProvider = user.id === params.order.providerId;
+
+          if (isProvider) {
+            // Se for prestador, mostrar dados do CLIENTE
+            if (params.order.client) {
+              participants = [
+                {
+                  id: params.order.client.id,
+                  name: params.order.client.name,
+                  username: params.order.client.username,
+                  avatar: params.order.client.avatar,
+                },
+              ];
+            }
+          } else {
+            // Se for cliente, mostrar dados do PRESTADOR
+            if (params.order.service?.provider) {
+              participants = [
+                {
+                  id: params.order.service.provider.id,
+                  name: params.order.service.provider.name,
+                  username: params.order.service.provider.username,
+                  avatar: params.order.service.provider.avatar,
+                },
+              ];
+            } else if (params.order.provider) {
+              participants = [
+                {
+                  id: params.order.provider.id,
+                  name: params.order.provider.name,
+                  username: params.order.provider.username,
+                  avatar: params.order.provider.avatar,
+                },
+              ];
+            }
+          }
+        }
+      }
+
       const chatWithDefaults = {
         ...chat,
         orders: params?.order ? [params.order] : chat.orders || [],
-        participants: chat.participants || [],
+        participants: participants,
         lastMessage: chat.lastMessage || null,
         currentOrderId: params?.order?.id || chat.orders?.[0]?.id || null,
       };
 
-      // Carregar mensagens e selecionar o chat
+      console.log("✅ Participantes definidos:", participants); // Debug
+
       await loadMessages(chat.id, 1);
       handleSelectChat(chatWithDefaults);
     } catch (error) {
@@ -614,47 +656,77 @@ const Mensagens = () => {
 
       if (chatId) {
         try {
-          // Carregar os chats primeiro
           await loadChats(false);
 
-          // Buscar o chat específico ou criar um mock com os dados do prestador
           let targetChat = chats.find((chat) => chat.id === chatId);
 
           if (!targetChat) {
-            // Se não encontrou o chat na lista, criar um objeto temporário
-            // com os dados necessários
+            // ✅ LÓGICA CORRIGIDA: Verificar quem é o usuário logado
+            let participantData = null;
+
+            if (order) {
+              const isProvider = user.id === order.providerId;
+
+              if (isProvider) {
+                // Prestador vê dados do cliente
+                participantData = order.client;
+              } else {
+                // Cliente vê dados do prestador
+                participantData = order.service?.provider || order.provider;
+              }
+            }
+
             targetChat = {
               id: chatId,
-              participants: [
-                {
-                  name: order?.service?.provider?.name || "Prestador",
-                  username: order?.service?.provider?.username || "prestador",
-                  avatar: order?.service?.provider?.avatar || null,
-                },
-              ],
+              participants: participantData
+                ? [
+                    {
+                      id: participantData.id,
+                      name: participantData.name,
+                      username: participantData.username,
+                      avatar: participantData.avatar,
+                    },
+                  ]
+                : [
+                    {
+                      name: "Usuário", // Fallback
+                      username: "usuario",
+                      avatar: null,
+                    },
+                  ],
               orders: order ? [order] : [],
               currentOrderId: orderId,
               lastMessage: null,
               unreadCount: 0,
             };
           } else if (
-            targetChat.participants.length === 0 &&
-            order?.service?.provider
+            targetChat.participants.length === 0 ||
+            !targetChat.participants[0]?.name
           ) {
-            // Se o chat existe mas não tem participants, adicionar do order
-            targetChat = {
-              ...targetChat,
-              participants: [
-                {
-                  name: order.service.provider.name,
-                  username: order.service.provider.username,
-                  avatar: order.service.provider.avatar,
-                },
-              ],
-            };
+            // ✅ CORRIGIR participantes incompletos
+            if (order) {
+              const isProvider = user.id === order.providerId;
+              const participantData = isProvider
+                ? order.client
+                : order.service?.provider || order.provider;
+
+              if (participantData) {
+                targetChat = {
+                  ...targetChat,
+                  participants: [
+                    {
+                      id: participantData.id,
+                      name: participantData.name,
+                      username: participantData.username,
+                      avatar: participantData.avatar,
+                    },
+                  ],
+                };
+              }
+            }
           }
 
-          // Selecionar o chat
+          console.log("✅ Chat final:", targetChat); // Debug
           await handleSelectChat(targetChat);
         } catch (error) {
           console.error("Erro ao processar parâmetros de navegação:", error);
@@ -665,7 +737,7 @@ const Mensagens = () => {
     if (route.params) {
       handleNavigationParams();
     }
-  }, [route.params]);
+  }, [route.params, user.id]);
 
   if (loading) {
     return (

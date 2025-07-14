@@ -159,6 +159,7 @@ import { messageService } from "../../services/messageService";
 import { chatService } from "../../services/chatService";
 import { paymentService } from "../../services/paymentService";
 import { reviewService } from "../../services/reviewService";
+import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
 
 const PedidoDetalhes = ({ route }) => {
   const { orderId } = route.params;
@@ -286,6 +287,7 @@ const PedidoDetalhes = ({ route }) => {
       await orderService.acceptQuotation(orderId);
       Alert.alert("Sucesso", "Orçamento aceito com sucesso!");
       loadOrderDetails();
+      emitOrderStatusUpdated(activeOrder);
     } catch (error) {
       Alert.alert(
         "Erro",
@@ -308,6 +310,7 @@ const PedidoDetalhes = ({ route }) => {
               await orderService.rejectQuotation(orderId);
               Alert.alert("Sucesso", "Orçamento rejeitado com sucesso!");
               loadOrderDetails();
+              emitOrderStatusUpdated(activeOrder);
             } catch (error) {
               Alert.alert(
                 "Erro",
@@ -345,6 +348,7 @@ const PedidoDetalhes = ({ route }) => {
       setIsQuotationModalVisible(false);
       Alert.alert("Sucesso", "Orçamento enviado com sucesso!");
       loadOrderDetails();
+      emitOrderStatusUpdated(activeOrder);
     } catch (error) {
       console.error("Erro ao enviar orçamento:", error);
       Alert.alert(
@@ -394,6 +398,7 @@ const PedidoDetalhes = ({ route }) => {
       await paymentService.confirmDirectPayment(orderPayment.id);
       Alert.alert("Sucesso", "Pagamento confirmado com sucesso!");
       loadOrderDetails();
+      emitOrderStatusUpdated(activeOrder);
     } catch (error) {
       console.error("Erro:", error);
       Alert.alert("Erro", "Não foi possível confirmar o pagamento");
@@ -719,7 +724,7 @@ const PedidoDetalhes = ({ route }) => {
               <UserCard
                 onPress={() =>
                   navigation.navigate("PerfilVisitante", {
-                    profileId: providerUser.id,
+                    userId: providerUser.id,
                   })
                 }
               >
@@ -773,7 +778,7 @@ const PedidoDetalhes = ({ route }) => {
               <UserCard
                 onPress={() =>
                   navigation.navigate("PerfilVisitante", {
-                    profileId: clientUser.id,
+                    userId: clientUser.id,
                   })
                 }
               >
@@ -1111,9 +1116,7 @@ const PedidoDetalhes = ({ route }) => {
             onPress={() => setIsQuotationModalVisible(true)}
           >
             <Ionicons name="create-outline" size={20} color="#fff" />
-            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
-              Enviar Orçamento
-            </ActionButtonText>
+            <ActionButtonText hasIcon>Enviar Orçamento</ActionButtonText>
           </ActionButton>
         </StickyFooter>
       );
@@ -1128,9 +1131,7 @@ const PedidoDetalhes = ({ route }) => {
         <StickyFooter>
           <ActionButton variant="primary" onPress={handleConfirmPayment}>
             <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
-            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
-              Confirmar Recebimento
-            </ActionButtonText>
+            <ActionButtonText hasIcon>Confirmar Recebimento</ActionButtonText>
           </ActionButton>
         </StickyFooter>
       );
@@ -1141,25 +1142,20 @@ const PedidoDetalhes = ({ route }) => {
         <StickyFooter>
           <ActionButton variant="primary" onPress={handlePayment}>
             <Ionicons name="card-outline" size={20} color="#fff" />
-            <ActionButtonText hasIcon style={{ minWidth: 100, minHeight: 20 }}>
-              Realizar Pagamento
-            </ActionButtonText>
+            <ActionButtonText hasIcon>Realizar Pagamento</ActionButtonText>
           </ActionButton>
         </StickyFooter>
       );
     }
 
     if (!isProvider && activeOrder?.status === "PAID") {
-      // Verificar se já existe uma avaliação para este pedido
       const userReview = userReviews?.reviews?.find(
         (r) => r.orderId === activeOrder.id && r.reviewerId === user?.id
       );
 
-      // Se já avaliado, não mostrar footer (a informação já está no badge)
       if (userReview) {
         return null;
       } else {
-        // Não avaliado ainda - mostrar botão de avaliar
         return (
           <StickyFooter>
             <ActionButton
@@ -1168,16 +1164,12 @@ const PedidoDetalhes = ({ route }) => {
                 navigation.navigate("ServicoDetalhes", {
                   id: activeOrder.service.id,
                   orderId: activeOrder.id,
+                  scrollToReview: true,
                 })
               }
             >
               <Ionicons name="star-outline" size={20} color="#fff" />
-              <ActionButtonText
-                hasIcon
-                style={{ minWidth: 100, minHeight: 20 }}
-              >
-                ⭐ Avaliar Serviço
-              </ActionButtonText>
+              <ActionButtonText hasIcon>⭐ Avaliar Serviço</ActionButtonText>
             </ActionButton>
           </StickyFooter>
         );

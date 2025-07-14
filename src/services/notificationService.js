@@ -18,6 +18,34 @@ class NotificationService {
     this.expoPushToken = null;
     this.notificationListener = null;
     this.responseListener = null;
+    this.navigationRef = null; // ✅ NOVO: Referência para navegação
+    this.callbacks = {}; // ✅ NOVO: Callbacks para diferentes eventos
+  }
+
+  // ✅ NOVO: Configurar referência de navegação
+  setNavigationRef(navigationRef) {
+    this.navigationRef = navigationRef;
+  }
+
+  // ✅ NOVO: Registrar callbacks para eventos
+  registerCallback(eventType, callback) {
+    if (!this.callbacks[eventType]) {
+      this.callbacks[eventType] = [];
+    }
+    this.callbacks[eventType].push(callback);
+  }
+
+  // ✅ NOVO: Executar callbacks
+  executeCallbacks(eventType, data) {
+    if (this.callbacks[eventType]) {
+      this.callbacks[eventType].forEach((callback) => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error(`Erro ao executar callback ${eventType}:`, error);
+        }
+      });
+    }
   }
 
   // ✅ Registrar para notificações push
@@ -82,7 +110,7 @@ class NotificationService {
   // ✅ Enviar token para o backend
   async sendTokenToBackend(token) {
     try {
-      await api.post("/user/push-token", {
+      await api.post("/users/me/push-token", {
         pushToken: token,
         platform: Platform.OS,
       });
@@ -98,8 +126,18 @@ class NotificationService {
     this.notificationListener = Notifications.addNotificationReceivedListener(
       (notification) => {
         console.log("📱 Notificação recebida:", notification);
-        // Aqui você pode implementar lógica adicional
-        // como atualizar estado da aplicação
+
+        // ✅ IMPLEMENTADO: Lógica adicional quando recebe notificação
+        const notificationData = notification.request.content.data;
+
+        // Executar callbacks registrados
+        this.executeCallbacks("notificationReceived", notification);
+
+        // Atualizar badges baseado no tipo
+        this.updateBadgeForNotification(notificationData);
+
+        // Mostrar notificação personalizada se necessário
+        this.handleInAppNotification(notification);
       }
     );
 
@@ -108,34 +146,76 @@ class NotificationService {
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("👆 Usuário interagiu com notificação:", response);
 
-        // Navegar para tela específica baseado no tipo de notificação
+        // ✅ IMPLEMENTADO: Navegar para tela específica
         this.handleNotificationResponse(response);
       });
   }
 
-  // ✅ Lidar com resposta à notificação
+  // ✅ NOVO: Atualizar badges baseado no tipo de notificação
+  updateBadgeForNotification(notificationData) {
+    // Aqui você pode implementar lógica para atualizar contextos/badges
+    switch (notificationData.type) {
+      case "new_order":
+        // Incrementar badge de pedidos
+        this.executeCallbacks("newOrderReceived", notificationData);
+        break;
+      case "message":
+        // Incrementar badge de mensagens
+        this.executeCallbacks("newMessageReceived", notificationData);
+        break;
+      case "payment":
+        // Notificar sobre pagamento
+        this.executeCallbacks("paymentReceived", notificationData);
+        break;
+    }
+  }
+
+  // ✅ NOVO: Mostrar notificação personalizada dentro do app
+  handleInAppNotification(notification) {
+    // Você pode implementar um toast ou banner customizado aqui
+    const { title, body } = notification.request.content;
+
+    // Exemplo: usar um contexto de toast
+    this.executeCallbacks("showInAppNotification", {
+      title,
+      body,
+      type: "info",
+    });
+  }
+
+  // ✅ IMPLEMENTADO: Lidar com resposta à notificação
   handleNotificationResponse(response) {
     const notificationData = response.notification.request.content.data;
 
-    // Navegar baseado no tipo de notificação
-    switch (notificationData.type) {
-      case "new_order":
-        // Navegar para pedidos
-        // navigation.navigate('Pedidos');
-        break;
-      case "message":
-        // Navegar para mensagens
-        // navigation.navigate('Messages', { id: notificationData.messageId });
-        break;
-      case "payment":
-        // Navegar para pagamentos
-        // navigation.navigate('Payments');
-        break;
-      default:
-        // Navegar para home
-        // navigation.navigate('Home');
-        break;
+    // ✅ IMPLEMENTADO: Navegar baseado no tipo de notificação
+    if (this.navigationRef) {
+      switch (notificationData.type) {
+        case "new_order":
+          this.navigationRef.navigate("Pedidos");
+          break;
+        case "message":
+          this.navigationRef.navigate("Mensagens", {
+            id: notificationData.messageId,
+          });
+          break;
+        case "payment":
+          this.navigationRef.navigate("Pagamentos");
+          break;
+        case "order_update":
+          this.navigationRef.navigate("PedidoDetalhes", {
+            id: notificationData.orderId,
+          });
+          break;
+        default:
+          this.navigationRef.navigate("Home");
+          break;
+      }
+    } else {
+      console.warn("⚠️ NavigationRef não configurado");
     }
+
+    // Executar callbacks para resposta
+    this.executeCallbacks("notificationResponse", response);
   }
 
   // ✅ Agendar notificação local (para teste)

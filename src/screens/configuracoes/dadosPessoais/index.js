@@ -11,6 +11,7 @@ import {
   LoadingSpinner,
   ErrorText,
   FieldContainer,
+  HelperText,
 } from "./styles";
 import { useAuth } from "../../../contexts/authContext";
 import { userService } from "../../../services/userService";
@@ -29,10 +30,8 @@ const DadosPessoais = () => {
     name: user.name || "",
     email: user.email || "",
     phone: user.phone || "",
+    cpf: user.cpf || "",
   });
-
-  // Apenas mostrar o CPF, sem permitir edição
-  const formattedCPF = user.cpf ? formatCPF(user.cpf) : "Não cadastrado";
 
   const handleChange = (name, value) => {
     setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -50,6 +49,32 @@ const DadosPessoais = () => {
     }));
   };
 
+  const validateCPF = (cpf) => {
+    const cleanCPF = cpf.replace(/\D/g, "");
+
+    if (cleanCPF.length !== 11) return false;
+    if (/^(\d)\1{10}$/.test(cleanCPF)) return false;
+
+    // Validação dos dígitos verificadores
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
+    }
+    let remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleanCPF.charAt(9))) return false;
+
+    sum = 0;
+    for (let i = 0; i < 10; i++) {
+      sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
+    }
+    remainder = (sum * 10) % 11;
+    if (remainder === 10 || remainder === 11) remainder = 0;
+    if (remainder !== parseInt(cleanCPF.charAt(10))) return false;
+
+    return true;
+  };
+
   const validate = () => {
     const newErrors = {};
 
@@ -57,14 +82,21 @@ const DadosPessoais = () => {
       newErrors.name = "Nome é obrigatório";
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = "E-mail é obrigatório";
-    } else if (!validateEmail(formData.email)) {
+    // EMAIL OPCIONAL - remover validação obrigatória
+    if (formData.email && !validateEmail(formData.email)) {
       newErrors.email = "E-mail inválido";
     }
 
-    if (formData.phone && formData.phone.length < 14) {
+    // TELEFONE OBRIGATÓRIO - adicionar validação
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Telefone é obrigatório";
+    } else if (formData.phone.length < 14) {
       newErrors.phone = "Telefone inválido";
+    }
+
+    // Validar CPF apenas se foi preenchido
+    if (formData.cpf && !validateCPF(formData.cpf)) {
+      newErrors.cpf = "CPF inválido";
     }
 
     setErrors(newErrors);
@@ -78,6 +110,7 @@ const DadosPessoais = () => {
       setLoading(true);
       const updatedUser = await userService.updateProfile(formData);
       updateUser(updatedUser);
+
       Alert.alert("Sucesso", "Dados atualizados com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() },
       ]);
@@ -97,7 +130,7 @@ const DadosPessoais = () => {
       <ScrollView>
         <Form>
           <FieldContainer>
-            <Label>Nome completo</Label>
+            <Label>Nome completo *</Label>
             <Input
               value={formData.name}
               onChangeText={(value) => handleChange("name", value)}
@@ -123,7 +156,7 @@ const DadosPessoais = () => {
           </FieldContainer>
 
           <FieldContainer>
-            <Label>Telefone</Label>
+            <Label>Telefone *</Label>
             <Input
               value={formData.phone}
               onChangeText={(value) => handleChange("phone", value)}
@@ -139,10 +172,21 @@ const DadosPessoais = () => {
           <FieldContainer>
             <Label>CPF</Label>
             <Input
-              value={formattedCPF}
-              editable={false}
-              style={{ backgroundColor: "#f5f5f5" }}
+              value={formData.cpf}
+              onChangeText={(value) => handleChange("cpf", value)}
+              placeholder="000.000.000-00"
+              keyboardType="numeric"
+              maxLength={14}
+              error={errors.cpf}
+              editable={!loading && !user.cpf}
+              style={
+                user.cpf ? { backgroundColor: "#f5f5f5", color: "#666" } : null
+              }
             />
+            {errors.cpf && <ErrorText>{errors.cpf}</ErrorText>}
+            {user.cpf && (
+              <HelperText>CPF já cadastrado e não pode ser alterado</HelperText>
+            )}
           </FieldContainer>
 
           <SaveButton onPress={handleSubmit} disabled={loading}>

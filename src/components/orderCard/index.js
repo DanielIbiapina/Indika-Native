@@ -152,6 +152,7 @@ const OrderCard = ({
                 onPress={() =>
                   navigation.navigate("ServicoDetalhes", {
                     id: order.service.id,
+                    scrollToReview: true,
                   })
                 }
                 testID={`rate-service-${order.id}`}

@@ -263,7 +263,9 @@ const Login = () => {
                   </ErrorMessage>
                 )}
 
-                <ForgotPassword>
+                <ForgotPassword
+                  onPress={() => navigation.navigate("ForgotPasswordPhone")}
+                >
                   <Text>Esqueceu sua senha?</Text>
                 </ForgotPassword>
 

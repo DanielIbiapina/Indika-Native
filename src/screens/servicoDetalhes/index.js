@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/authContext";
 import { reviewService } from "../../services/reviewService";
@@ -72,6 +72,8 @@ import { messageService } from "../../services/messageService";
 import { generateQuotationMessage } from "../../utils/generateQuotationMessage";
 import generateWelcomeMessage from "../../utils/generateWelcomeMessage";
 import { MESSAGE_TYPES } from "../../constants/orderStatus";
+import { emitOrderCreated } from "../../utils/eventEmitter";
+import estreloamigos from "../../assets/estreloamigos.jpg";
 
 const PERIODS = {
   MORNING: "morning",
@@ -102,49 +104,81 @@ const PeriodSelectorComponent = ({ selectedPeriod, onPeriodChange }) => (
   </PeriodSelector>
 );
 
-const ServiceHeader = ({ service, navigation, signed, onBookingPress }) => (
-  <ServiceInfo>
-    <ServiceImage source={{ uri: service.images[0] }} testID="service-image" />
-    <ServiceDetails>
-      <ServiceTitle>{service.title}</ServiceTitle>
-      <TouchableOpacity
-        onPress={() =>
-          navigation.navigate("PerfilVisitante", {
-            profileId: service.provider.id,
-          })
-        }
-        testID="provider-profile-button"
-      >
-        <ProviderInfo>
-          <ProviderAvatar source={{ uri: service.provider.avatar }} />
-          <ProviderName>{service.provider.name}</ProviderName>
-          <Separator>•</Separator>
-          <Rating>{service.provider.rating?.toFixed(1)}⭐</Rating>
-        </ProviderInfo>
-      </TouchableOpacity>
-      <Price>
-        R$ {service.priceStartingAt} / {service.priceUnit}
-      </Price>
-      <Description>{service.description}</Description>
+const DEFAULT_FRIENDS_IMAGE = estreloamigos;
 
-      {signed ? (
-        <BookingButton onPress={onBookingPress} testID="booking-button">
-          <BookingButtonText>Agendar Serviço</BookingButtonText>
-        </BookingButton>
-      ) : (
-        <BookingButton
-          onPress={() => navigation.navigate("Entrar")}
-          testID="login-button"
+const getRecommendationImageSource = (rec) => {
+  if (rec.communityImage) {
+    return { uri: rec.communityImage };
+  }
+
+  if (
+    rec.communityName?.toLowerCase().includes("amigos") ||
+    rec.categories?.includes("friends")
+  ) {
+    return DEFAULT_FRIENDS_IMAGE;
+  }
+
+  return {
+    uri: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+  };
+};
+
+const ServiceHeader = ({
+  service,
+  navigation,
+  signed,
+  onBookingPress,
+  showBookingForm,
+}) => (
+  console.log(service.provider),
+  (
+    <ServiceInfo>
+      <ServiceImage
+        source={{ uri: service.images[0] }}
+        testID="service-image"
+      />
+      <ServiceDetails>
+        <ServiceTitle>{service.title}</ServiceTitle>
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate("PerfilVisitante", {
+              userId: service.provider.id,
+            })
+          }
+          testID="provider-profile-button"
         >
-          <BookingButtonText>Entre para agendar</BookingButtonText>
-        </BookingButton>
-      )}
-    </ServiceDetails>
-  </ServiceInfo>
+          <ProviderInfo>
+            <ProviderAvatar source={{ uri: service.provider.avatar }} />
+            <ProviderName>{service.provider.name}</ProviderName>
+            <Separator>•</Separator>
+            <Rating>{service.provider.rating?.toFixed(1)}⭐</Rating>
+          </ProviderInfo>
+        </TouchableOpacity>
+        <Price>
+          R$ {service.priceStartingAt} / {service.priceUnit}
+        </Price>
+        <Description>{service.description}</Description>
+
+        {!showBookingForm &&
+          (signed ? (
+            <BookingButton onPress={onBookingPress} testID="booking-button">
+              <BookingButtonText>Agendar Serviço</BookingButtonText>
+            </BookingButton>
+          ) : (
+            <BookingButton
+              onPress={() => navigation.navigate("Entrar")}
+              testID="login-button"
+            >
+              <BookingButtonText>Entre para agendar</BookingButtonText>
+            </BookingButton>
+          ))}
+      </ServiceDetails>
+    </ServiceInfo>
+  )
 );
 
 const ServicoDetalhes = () => {
-  const { id } = useRoute().params;
+  const { id, scrollToReview } = useRoute().params;
   const { signed, user } = useAuth();
   const [service, setService] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -169,6 +203,25 @@ const ServicoDetalhes = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
+
+  const scrollViewRef = useRef(null);
+
+  const handleOpenBookingForm = () => {
+    setShowBookingForm(true);
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 500, animated: true });
+    }, 150);
+  };
+
+  const scrollToReviewForm = () => {
+    setTimeout(() => {
+      const reviewSectionPosition = 800;
+      scrollViewRef.current?.scrollTo({
+        y: reviewSectionPosition,
+        animated: true,
+      });
+    }, 300);
+  };
 
   const loadInitialData = async () => {
     try {
@@ -212,6 +265,12 @@ const ServicoDetalhes = () => {
     loadInitialData();
   }, [id, signed, user]);
 
+  useEffect(() => {
+    if (scrollToReview && !loading) {
+      scrollToReviewForm();
+    }
+  }, [scrollToReview, loading]);
+
   const getInitialMessage = (serviceName) => {
     return `Quer entrar em contato com o prestador para tirar alguma dúvida? Deixe uma mensagem aqui e abrirá um chat automaticamente`;
   };
@@ -219,14 +278,38 @@ const ServicoDetalhes = () => {
   // Validação do formulário de agendamento
   const validateBookingData = () => {
     const errors = [];
-    const today = new Date();
-    //const tomorrow = new Date();
-    //tomorrow.setDate(tomorrow.getDate() + 1);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Só data, sem horário
 
     if (!bookingData.date) {
       errors.push("Selecione uma data");
-    } else if (bookingData.date < today) {
-      errors.push("A data deve ser a partir de amanhã");
+    } else {
+      const selectedDate = new Date(
+        bookingData.date.getFullYear(),
+        bookingData.date.getMonth(),
+        bookingData.date.getDate()
+      );
+
+      if (selectedDate < today) {
+        errors.push("Não é possível agendar para datas passadas");
+      }
+
+      if (
+        bookingData.specificTime &&
+        selectedDate.getTime() === today.getTime()
+      ) {
+        const selectedDateTime = new Date(bookingData.date);
+        selectedDateTime.setHours(
+          bookingData.time.getHours(),
+          bookingData.time.getMinutes(),
+          0,
+          0
+        );
+
+        if (selectedDateTime <= now) {
+          errors.push("O horário selecionado já passou");
+        }
+      }
     }
 
     if (bookingData.specificTime) {
@@ -240,7 +323,6 @@ const ServicoDetalhes = () => {
     return errors;
   };
 
-  // Função para tentar novamente com retry
   const retryOperation = async (operation, errorMessage) => {
     let lastError;
     for (let i = 0; i <= retryCount; i++) {
@@ -310,6 +392,14 @@ const ServicoDetalhes = () => {
         "Erro ao criar pedido"
       );
 
+      emitOrderCreated({
+        ...newOrder,
+        service: {
+          ...service,
+          title: service.title,
+        },
+      });
+
       const chat = await retryOperation(
         () => chatService.createChat(service.providerId),
         "Erro ao criar chat"
@@ -352,15 +442,12 @@ const ServicoDetalhes = () => {
         user.id
       );
 
-      // Enviar mensagens em sequência para garantir ordem correta
       await messageService.sendMessage(chatId, welcomeMessage);
 
-      // Pequeno delay para garantir ordem
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       await messageService.sendMessage(chatId, quotationMessage);
 
-      // Se houver descrição adicional, enviar como mensagem de texto do cliente
       if (bookingData.description?.trim()) {
         await new Promise((resolve) => setTimeout(resolve, 100));
         await messageService.sendMessage(chatId, {
@@ -371,7 +458,6 @@ const ServicoDetalhes = () => {
       }
     } catch (error) {
       console.error("Erro ao enviar mensagens iniciais:", error);
-      // Não bloqueia o fluxo principal se falhar
     }
   };
 
@@ -459,9 +545,11 @@ const ServicoDetalhes = () => {
   return (
     <Container testID="servico-detalhes-container">
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
         testID="servico-detalhes-scroll"
+        decelerationRate="fast"
       >
         <BackButton onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color="black" />
@@ -471,7 +559,8 @@ const ServicoDetalhes = () => {
           service={service}
           navigation={navigation}
           signed={signed}
-          onBookingPress={() => setShowBookingForm(true)}
+          onBookingPress={handleOpenBookingForm}
+          showBookingForm={showBookingForm}
         />
 
         {showBookingForm && (
@@ -587,7 +676,7 @@ const ServicoDetalhes = () => {
                   {recommendations.map((rec) => (
                     <RecommendationCard key={rec.communityId}>
                       <CommunityImage
-                        source={{ uri: rec.communityImage }}
+                        source={getRecommendationImageSource(rec)}
                         resizeMode="cover"
                       />
                       <ContentContainer>

@@ -5,6 +5,7 @@ export const ORDER_STATUS = {
   QUOTE_ACCEPTED: "QUOTE_ACCEPTED",
   PAYMENT_PENDING: "PAYMENT_PENDING",
   PAID: "PAID",
+  COMPLETED: "COMPLETED",
   CANCELLED: "CANCELLED",
 };
 
@@ -15,6 +16,7 @@ export const ORDER_STATUS_LABELS = {
   QUOTE_ACCEPTED: "Orçamento aceito",
   PAYMENT_PENDING: "Aguardando pagamento",
   PAID: "Pago",
+  COMPLETED: "Concluído",
   CANCELLED: "Cancelado",
 };
 
@@ -22,7 +24,8 @@ export const ORDER_STATUS_LABELS = {
 export const ORDER_STATUS_FLOW = {
   QUOTE_PHASE: ["WAITING_QUOTE", "QUOTE_SENT", "QUOTE_REJECTED"],
   PAYMENT_PHASE: ["QUOTE_ACCEPTED", "PAYMENT_PENDING"],
-  FINAL_PHASE: ["PAID", "CANCELLED"],
+  SERVICE_PHASE: ["PAID"],
+  FINAL_PHASE: ["COMPLETED", "CANCELLED"],
 };
 
 export const MESSAGE_TYPES = {
@@ -43,7 +46,9 @@ export const getStatusColor = (status) => {
     case ORDER_STATUS.PAYMENT_PENDING:
       return "#f1c40f"; // Amarelo
     case ORDER_STATUS.PAID:
-      return "#27ae60"; // Verde escuro
+      return "#27ae60"; // Verde - Serviço realizado
+    case ORDER_STATUS.COMPLETED:
+      return "#34495e"; // Cinza escuro - Concluído
     case ORDER_STATUS.CANCELLED:
       return "#e74c3c"; // Vermelho
     default:

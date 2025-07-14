@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
@@ -7,6 +7,8 @@ import { useAuth } from "../contexts/authContext";
 import { linking } from "./linking";
 import { View, ActivityIndicator } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useBadge } from "../contexts/badgeContext";
+import Badge from "../components/badge";
 
 // Importar as telas
 import Home from "../screens/home";
@@ -54,6 +56,12 @@ import OnBoarding from "../screens/onBoarding";
 import SignupFlow from "../screens/cadastro"; // <--- NOVO: Fluxo de cadastro unificado
 import TodasComunidades from "../screens/todasComunidades";
 
+// Importar as telas de esqueceu senha
+import ForgotPasswordPhone from "../screens/forgotPassword/phoneStep";
+import ForgotPasswordCode from "../screens/forgotPassword/codeStep";
+
+import { notificationService } from "../services/notificationService";
+
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 const AuthStack = createStackNavigator(); // Nova stack para autenticação
@@ -64,6 +72,30 @@ const AuthNavigator = () => {
     <AuthStack.Navigator screenOptions={{ headerShown: false }}>
       <AuthStack.Screen name="Entrar" component={Login} />
       <AuthStack.Screen name="Cadastro" component={SignupFlow} />
+      <AuthStack.Screen
+        name="EsqueceuSenhaPhone"
+        component={ForgotPasswordPhone}
+        options={{
+          headerShown: true,
+          title: "Esqueceu a Senha",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
+      <AuthStack.Screen
+        name="EsqueceuSenhaCode"
+        component={ForgotPasswordCode}
+        options={{
+          headerShown: true,
+          title: "Redefinir Senha",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
     </AuthStack.Navigator>
   );
 };
@@ -399,13 +431,21 @@ const MainStack = () => {
 
 // Navegador de Tabs (bottom menu)
 const TabNavigator = () => {
-  const { signed } = useAuth();
+  const { signed, user } = useAuth();
+  const { badges, isProvider } = useBadge();
+
+  // Debug dos badges
+  console.log("📱 TabNavigator render:");
+  console.log("   👤 User:", user?.id);
+  console.log("   🔧 IsProvider:", isProvider);
+  console.log("   📊 Badges:", badges);
 
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
+          let badgeCount = 0;
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
@@ -413,13 +453,35 @@ const TabNavigator = () => {
             iconName = focused ? "people" : "people-outline";
           } else if (route.name === "Pedidos") {
             iconName = focused ? "cart" : "cart-outline";
+            badgeCount = badges.pedidos;
+            console.log(`📋 Tab Pedidos - Badge count: ${badgeCount}`);
           } else if (route.name === "Perfil") {
             iconName = focused ? "person" : "person-outline";
+            badgeCount = isProvider ? badges.solicitacoes : 0;
+            console.log(
+              `👤 Tab Perfil - Badge count: ${badgeCount} (isProvider: ${isProvider})`
+            );
           } else if (route.name === "Entrar") {
             iconName = focused ? "log-in" : "log-in-outline";
           }
 
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return (
+            <View style={{ position: "relative" }}>
+              <Ionicons name={iconName} size={size} color={color} />
+              {badgeCount > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -5,
+                    right: -8,
+                    zIndex: 1,
+                  }}
+                >
+                  <Badge count={badgeCount} size="small" />
+                </View>
+              )}
+            </View>
+          );
         },
         tabBarActiveTintColor: "#422680",
         tabBarInactiveTintColor: "#666666",
@@ -445,8 +507,28 @@ const TabNavigator = () => {
 };
 
 const AppNavigator = () => {
+  const navigationRef = useRef();
+
+  useEffect(() => {
+    // ✅ CONFIGURAR: Referência de navegação
+    notificationService.setNavigationRef(navigationRef.current);
+
+    // ✅ CONFIGURAR: Listeners
+    notificationService.setupNotificationListeners();
+
+    // ✅ REGISTRAR: Callbacks opcionais
+    notificationService.registerCallback("newOrderReceived", (data) => {
+      // Atualizar badge de pedidos
+      console.log("Novo pedido recebido:", data);
+    });
+
+    return () => {
+      notificationService.removeNotificationListeners();
+    };
+  }, []);
+
   return (
-    <NavigationContainer linking={linking}>
+    <NavigationContainer ref={navigationRef} linking={linking}>
       <MainStack />
     </NavigationContainer>
   );

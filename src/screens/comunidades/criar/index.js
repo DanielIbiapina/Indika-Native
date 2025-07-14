@@ -14,6 +14,7 @@ import {
   ErrorMessage,
 } from "./styles";
 import ImageUpload from "../../../components/imageUpload";
+import { emitCommunityCreated } from "../../../utils/eventEmitter";
 
 const CriarComunidade = () => {
   const navigation = useNavigation();
@@ -64,7 +65,10 @@ const CriarComunidade = () => {
       formDataToSend.append("categories", JSON.stringify(formData.categories));
 
       const response = await communityService.create(formDataToSend);
-      // Navega para a página de detalhes da comunidade recém-criada
+
+      // 🎯 EMITIR EVENTO
+      emitCommunityCreated(response);
+
       navigation.replace("ComunidadeDetalhes", { id: response.id });
     } catch (err) {
       console.error("Erro ao criar:", err);

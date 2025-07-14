@@ -21,6 +21,16 @@ export const userService = {
     }
   },
 
+  // Atualizar senha do usuário
+  updatePassword: async (passwordData) => {
+    try {
+      const response = await api.put("/users/me/password", passwordData);
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao atualizar senha");
+    }
+  },
+
   // Atualizar o avatar do usuário
   updateAvatar: async (formData) => {
     try {
@@ -93,7 +103,78 @@ export const userService = {
     }
   },
 
+  // Reset de senha via SMS
+  resetPassword: async (resetData) => {
+    try {
+      const response = await api.post("/auth/reset-password", resetData);
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao resetar senha");
+    }
+  },
+
   // Obter serviços de um usuário específico
+
+  // Obter preferências de notificação
+  getNotificationPreferences: async () => {
+    try {
+      const response = await api.get("/users/me/notification-preferences");
+      return response.data;
+    } catch (error) {
+      // Retornar configurações padrão se não houver no backend
+      return {
+        pushNotifications: true,
+        emailNotifications: true,
+        newOrders: true,
+        orderUpdates: true,
+        messages: true,
+        marketing: false,
+      };
+    }
+  },
+
+  // Atualizar preferências de notificação
+  updateNotificationPreferences: async (preferences) => {
+    try {
+      const response = await api.put(
+        "/users/me/notification-preferences",
+        preferences
+      );
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao atualizar preferências de notificação");
+    }
+  },
+
+  // ✅ NOVO: Obter configurações de localização
+  getLocationSettings: async () => {
+    try {
+      const response = await api.get("/users/me/location-settings");
+      return response.data;
+    } catch (error) {
+      // Retornar configurações padrão se não houver no backend
+      return {
+        autoDetectLocation: true,
+        shareLocation: true,
+        preciseLocation: false,
+        locationHistory: false,
+        showInProfile: true,
+      };
+    }
+  },
+
+  // ✅ NOVO: Atualizar configurações de localização
+  updateLocationSettings: async (settings) => {
+    try {
+      const response = await api.put("/users/me/location-settings", settings);
+      return response.data;
+    } catch (error) {
+      throw handleError(
+        error,
+        "Erro ao atualizar configurações de localização"
+      );
+    }
+  },
 };
 
 // Função auxiliar para tratar erros

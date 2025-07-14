@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { orderService } from "../services/orderService";
+import { emitOrderStatusUpdated } from "../utils/eventEmitter";
 
 const OrderContext = createContext({});
 
@@ -60,7 +61,10 @@ export const OrderProvider = ({ children }) => {
       }
 
       await orderService.updateStatus(orderId, newStatus);
-      await refreshOrder(orderId);
+      const updatedOrder = await refreshOrder(orderId);
+
+      // 🎯 EMITIR EVENTO: Notificar outras telas automaticamente
+      emitOrderStatusUpdated(updatedOrder);
 
       setOrderUpdates((prev) => ({
         ...prev,

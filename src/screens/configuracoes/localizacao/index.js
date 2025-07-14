@@ -34,6 +34,7 @@ const Localizacao = () => {
     shareLocation: true,
     preciseLocation: false,
     locationHistory: false,
+    showInProfile: true, // ✅ NOVO: Mostrar localização no perfil
   });
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -96,11 +97,20 @@ const Localizacao = () => {
   const updateCurrentLocation = async () => {
     try {
       setRefreshing(true);
-      const { coords } = await Location.getCurrentPositionAsync({
+
+      // ✅ ADICIONAR: Timeout para evitar travamento
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 30000)
+      );
+
+      const locationPromise = Location.getCurrentPositionAsync({
         accuracy: settings.preciseLocation
           ? Location.Accuracy.Highest
           : Location.Accuracy.Balanced,
+        timeout: 20000, // ✅ ADICIONAR: timeout
       });
+
+      const { coords } = await Promise.race([locationPromise, timeoutPromise]);
 
       const [address] = await Location.reverseGeocodeAsync({
         latitude: coords.latitude,
@@ -116,7 +126,14 @@ const Localizacao = () => {
         });
       }
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível atualizar sua localização");
+      if (error.message === "Timeout") {
+        Alert.alert(
+          "Timeout",
+          "Não foi possível obter localização em tempo hábil"
+        );
+      } else {
+        Alert.alert("Erro", "Não foi possível atualizar sua localização");
+      }
     } finally {
       setRefreshing(false);
     }
@@ -192,6 +209,21 @@ const Localizacao = () => {
           />
         </LocationItem>
 
+        {/* ✅ NOVO: Adicionar esta opção */}
+        <LocationItem>
+          <Ionicons name="eye-outline" size={24} color="#666" />
+          <TextContainer>
+            <ItemTitle>Mostrar no perfil</ItemTitle>
+            <ItemDescription>
+              Sua cidade/estado ficará visível no seu perfil público
+            </ItemDescription>
+          </TextContainer>
+          <Switch
+            value={settings.showInProfile}
+            onValueChange={() => handleToggle("showInProfile")}
+          />
+        </LocationItem>
+
         <LocationItem>
           <Ionicons name="navigate-outline" size={24} color="#666" />
           <TextContainer>
@@ -242,6 +274,12 @@ const Localizacao = () => {
               {"\n"}
               {currentAddress.city}, {currentAddress.region}
             </AddressText>
+            {/* ✅ ADICIONAR: Mostrar se está visível no perfil */}
+            <InfoMessage style={{ marginTop: 8, fontSize: 12 }}>
+              {settings.showInProfile
+                ? "✅ Visível no seu perfil"
+                : "🔒 Oculta no seu perfil"}
+            </InfoMessage>
             <RefreshButton
               onPress={updateCurrentLocation}
               disabled={refreshing}

@@ -372,14 +372,6 @@ const TelaChat = ({
 
   return (
     <Container>
-      {showTooltip && (
-        <OrderDetailsTooltip
-          onClose={() => {
-            setShowTooltip(false);
-          }}
-        />
-      )}
-
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
@@ -411,6 +403,14 @@ const TelaChat = ({
           </SendButton>
         </InputContainer>
       </KeyboardAvoidingView>
+
+      {showTooltip && (
+        <OrderDetailsTooltip
+          onClose={() => {
+            setShowTooltip(false);
+          }}
+        />
+      )}
 
       <QuotationModal
         isVisible={showQuotationModal}

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigation } from "@react-navigation/native";
+import React, { useState, useEffect } from "react";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { serviceService } from "../../../services/serviceService";
 import ImageUpload from "../../../components/imageUpload";
 import {
@@ -9,38 +9,80 @@ import {
   Input,
   TextArea,
   PriceInput,
-  CategorySelect,
+  CategoryButton,
+  CategoryButtonText,
+  CategoryButtonIcon,
+  SubcategoriesContainer,
+  SubcategoryTag,
+  SubcategoryTagText,
   ErrorMessage,
   ButtonStyled,
   ButtonStyledText,
   ScrollContainer,
 } from "./styles";
 import { Picker } from "@react-native-picker/picker";
+import {
+  CATEGORIES,
+  DEFAULT_CATEGORY_IMAGES,
+} from "../../../constants/categories";
+import CategorySelectionModal from "../../../components/categorySelectionModal";
+import { MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator, Text, View } from "react-native";
+import {
+  emitServiceCreated,
+  emitServiceUpdated,
+} from "../../../utils/eventEmitter";
 
 const CriarServico = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+
+  // ✅ NOVO: Verificar se é edição
+  const { serviceId } = route.params || {};
+  const isEditing = !!serviceId;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loadingService, setLoadingService] = useState(isEditing);
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
+    subcategories: [], // ✅ NOVO
     priceStartingAt: "",
     priceUnit: "servico",
     image: null,
   });
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
-  const DEFAULT_IMAGES = {
-    "Assistência Técnica":
-      "https://images.unsplash.com/photo-1523655223303-4e9ef5234587?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YXNzaXN0JUMzJUFBbmNpYSUyMHRlY25pY2F8ZW58MHx8MHx8fDA%3D",
-    "Reformas e Reparos":
-      "https://images.unsplash.com/photo-1581783898377-1c85bf937427?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjN8fHJlZm9ybWFzJTIwZSUyMHJlcGFyb3N8ZW58MHx8MHx8fDA%3D",
-    Eventos:
-      "https://images.unsplash.com/photo-1671036089231-a56464fdaadd?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NzB8fGV2ZW50b3N8ZW58MHx8MHx8fDA%3D",
-    "Serviços Domésticos":
-      "https://plus.unsplash.com/premium_photo-1684407616442-87bf0d69e8b4?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OXx8ZmF4aW5hfGVufDB8fDB8fHww",
-    Aulas:
-      "https://plus.unsplash.com/premium_photo-1713908832340-e733093a869e?w=700&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NDV8fGF1bGElMjBkZSUyMHlvZ2F8ZW58MHx8MHx8fDA%3D",
+  // ✅ NOVO: Carregar dados do serviço para edição
+  useEffect(() => {
+    if (isEditing) {
+      loadServiceData();
+    }
+  }, [serviceId]);
+
+  const loadServiceData = async () => {
+    try {
+      setLoadingService(true);
+      const service = await serviceService.getById(serviceId);
+
+      setFormData({
+        title: service.title,
+        description: service.description,
+        category: service.category,
+        subcategories: service.subcategories || [], // ✅ NOVO
+        priceStartingAt: service.priceStartingAt.toString(),
+        priceUnit: service.priceUnit,
+        image: service.images?.[0] ? { uri: service.images[0] } : null,
+      });
+    } catch (err) {
+      console.error("Erro ao carregar serviço:", err);
+      setError("Erro ao carregar dados do serviço");
+    } finally {
+      setLoadingService(false);
+    }
   };
 
   const handleChange = (name, value) => {
@@ -57,6 +99,15 @@ const CriarServico = () => {
     }));
   };
 
+  // ✅ NOVO: Handler para categoria + subcategorias
+  const handleCategorySelect = (data) => {
+    setFormData((prev) => ({
+      ...prev,
+      category: data.category,
+      subcategories: data.subcategories,
+    }));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
@@ -64,44 +115,98 @@ const CriarServico = () => {
     try {
       const formDataToSend = new FormData();
 
-      // Adiciona a imagem se houver uma nova
+      // ✅ NOVO: Se não tem imagem própria, usar a padrão da categoria
       if (formData.image?.uri) {
+        // Tem imagem própria
         formDataToSend.append("image", {
           uri: formData.image.uri,
           type: formData.image.type || "image/jpeg",
           name: formData.image.fileName || "service-image.jpg",
         });
+      } else {
+        // ✅ SEM IMAGEM: Usar padrão da categoria (sempre)
+        if (formData.category && DEFAULT_CATEGORY_IMAGES[formData.category]) {
+          console.log(`��️ Usando imagem padrão para: ${formData.category}`);
+          formDataToSend.append(
+            "defaultImage",
+            DEFAULT_CATEGORY_IMAGES[formData.category]
+          );
+        }
       }
 
       // Adiciona os outros dados do serviço
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("category", formData.category);
+      formDataToSend.append(
+        "subcategories",
+        JSON.stringify(formData.subcategories)
+      ); // ✅ NOVO
       formDataToSend.append("priceStartingAt", formData.priceStartingAt);
       formDataToSend.append("priceUnit", formData.priceUnit);
 
-      const response = await serviceService.create(formDataToSend);
-      // Navega para a página de detalhes do serviço recém-criado
-      navigation.replace("ServicoDetalhes", { id: response.id });
+      // ✅ UPSERT: Um método só para ambos os casos
+      const response = await serviceService.create(formDataToSend, serviceId);
+
+      // 🎯 EMITIR EVENTO: Notificar outras telas
+      if (isEditing) {
+        emitServiceUpdated(response);
+      } else {
+        emitServiceCreated(response);
+      }
+
+      // Navegar para detalhes
+      navigation.replace("ServicoDetalhes", { id: response.id || serviceId });
     } catch (err) {
-      console.error("Erro ao criar:", err);
-      setError(err.message || "Erro ao criar serviço");
+      console.error(`Erro ao ${isEditing ? "atualizar" : "criar"}:`, err);
+      setError(
+        err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} serviço`
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ LOADING: Enquanto carrega dados do serviço
+  if (loadingService) {
+    return (
+      <Container>
+        <ScrollContainer>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: 400,
+            }}
+          >
+            <ActivityIndicator size="large" color="#422680" />
+            <Text style={{ marginTop: 16, color: "#666" }}>
+              Carregando serviço...
+            </Text>
+          </View>
+        </ScrollContainer>
+      </Container>
+    );
+  }
+
   return (
     <Container>
       <ScrollContainer>
-        <Title>Criar Novo Serviço</Title>
+        {/* ✅ TÍTULO: Dinâmico */}
+        <Title>{isEditing ? "Editar Serviço" : "Criar Novo Serviço"}</Title>
 
         <Form>
           <ImageUpload
             value={formData.image}
             onChange={handleImageChange}
-            maxSize={2} // 2MB
+            maxSize={2}
             label="Foto de capa do serviço"
+            placeholder={
+              formData.category
+                ? DEFAULT_CATEGORY_IMAGES[formData.category]
+                : undefined
+            }
           />
 
           <Input
@@ -118,26 +223,33 @@ const CriarServico = () => {
             required
           />
 
-          <CategorySelect
-            selectedValue={formData.category}
-            onValueChange={(itemValue) => handleChange("category", itemValue)}
-          >
-            <Picker.Item label="Selecione uma categoria" value="" />
-            <Picker.Item
-              label="Assistência Técnica"
-              value="Assistência Técnica"
-            />
-            <Picker.Item
-              label="Reformas e Reparos"
-              value="Reformas e Reparos"
-            />
-            <Picker.Item label="Eventos" value="Eventos" />
-            <Picker.Item
-              label="Serviços Domésticos"
-              value="Serviços Domésticos"
-            />
-            <Picker.Item label="Aulas" value="Aulas" />
-          </CategorySelect>
+          {/* ✅ MODIFICADO: Mostrar categoria + subcategorias */}
+          <CategoryButton onPress={() => setShowCategoryModal(true)}>
+            <View style={{ flex: 1 }}>
+              <CategoryButtonText hasCategory={!!formData.category}>
+                {formData.category || "Selecionar Categoria"}
+              </CategoryButtonText>
+
+              {/* ✅ NOVO: Mostrar subcategorias selecionadas */}
+              {formData.subcategories.length > 0 && (
+                <SubcategoriesContainer>
+                  {formData.subcategories.map((subcategory, index) => (
+                    <SubcategoryTag key={index}>
+                      <SubcategoryTagText>{subcategory}</SubcategoryTagText>
+                    </SubcategoryTag>
+                  ))}
+                </SubcategoriesContainer>
+              )}
+            </View>
+
+            <CategoryButtonIcon>
+              <MaterialIcons
+                name="keyboard-arrow-down"
+                size={24}
+                color="#666"
+              />
+            </CategoryButtonIcon>
+          </CategoryButton>
 
           <PriceInput>
             <Input
@@ -162,11 +274,25 @@ const CriarServico = () => {
 
           <ButtonStyled onPress={handleSubmit} disabled={loading}>
             <ButtonStyledText>
-              {loading ? "Criando..." : "Criar Serviço"}
+              {loading
+                ? isEditing
+                  ? "Atualizando..."
+                  : "Criando..."
+                : isEditing
+                ? "Atualizar Serviço"
+                : "Criar Serviço"}
             </ButtonStyledText>
           </ButtonStyled>
         </Form>
       </ScrollContainer>
+
+      <CategorySelectionModal
+        visible={showCategoryModal}
+        onClose={() => setShowCategoryModal(false)}
+        selectedCategory={formData.category}
+        selectedSubcategories={formData.subcategories}
+        onSelect={handleCategorySelect}
+      />
     </Container>
   );
 };

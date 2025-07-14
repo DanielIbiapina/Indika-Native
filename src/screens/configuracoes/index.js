@@ -55,11 +55,11 @@ const Configuracoes = () => {
         {/* Privacidade */}
         <Section>
           <SectionTitle>Privacidade</SectionTitle>
-          <MenuItem onPress={() => navigation.navigate("VisibilidadePerfil")}>
+          {/*<MenuItem onPress={() => navigation.navigate("VisibilidadePerfil")}>
             <Ionicons name="eye-outline" size={24} color="#666" />
             <MenuItemText>Visibilidade do Perfil</MenuItemText>
             <Ionicons name="chevron-forward" size={24} color="#666" />
-          </MenuItem>
+          </MenuItem>*/}
           <MenuItem onPress={() => navigation.navigate("Localizacao")}>
             <Ionicons name="location-outline" size={24} color="#666" />
             <MenuItemText>Localização</MenuItemText>

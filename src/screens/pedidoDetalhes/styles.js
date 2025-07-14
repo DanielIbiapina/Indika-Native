@@ -64,13 +64,22 @@ export const ActionButton = styled.TouchableOpacity`
     variant === "secondary"
       ? `${theme.colors.primary}15`
       : theme.colors.primary};
-  padding: 16px;
-  border-radius: 8px;
+  padding: 18px 24px;
+  border-radius: 12px;
   align-items: center;
   justify-content: center;
   flex-direction: row;
   margin: ${({ noMargin }) => (noMargin ? "0" : "8px 0")};
   flex: ${({ variant }) => (variant === "secondary" ? "0.48" : "1")};
+  min-height: 56px;
+  elevation: 2;
+  ${Platform.OS === "ios" &&
+  `
+    shadow-color: #000;
+    shadow-offset: 0px 2px;
+    shadow-opacity: 0.1;
+    shadow-radius: 4px;
+  `}
 `;
 
 export const QuotationCard = styled.View`
@@ -241,23 +250,25 @@ export const ActionButtonText = styled.Text`
   color: ${({ variant, theme }) =>
     variant === "secondary" ? theme.colors.primary : "#fff"};
   font-weight: 600;
-  font-size: 15px;
+  font-size: 16px;
   margin-left: ${({ hasIcon }) => (hasIcon ? "8px" : "0")};
+  text-align: center;
 `;
 
 export const StickyFooter = styled.View`
   background-color: #fff;
-  padding: 16px;
+  padding: 20px 16px;
   border-top-width: 1px;
   border-top-color: ${({ theme }) => theme.colors.border};
   ${Platform.OS === "ios" &&
   `
     shadow-color: #000;
     shadow-offset: 0px -2px;
-    shadow-opacity: 0.05;
-    shadow-radius: 3px;
+    shadow-opacity: 0.08;
+    shadow-radius: 4px;
   `}
-  elevation: 4;
+  elevation: 6;
+  position: relative;
 `;
 
 export const CategoryBadge = styled.View`

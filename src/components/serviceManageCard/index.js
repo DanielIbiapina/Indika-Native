@@ -1,55 +1,93 @@
 import React from "react";
 import { Ionicons } from "@expo/vector-icons"; // Usando ícones do Expo
 import { Text } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import {
   Card,
+  CardPressable,
   ServiceImage,
   ServiceInfo,
+  ServiceHeader,
   Title,
+  CategoryBadge,
+  CategoryText,
+  ServiceStats,
   Price,
-  Category,
-  Actions,
-  ActionButton,
+  StatsRow,
   Rating,
   RatingText,
+  StatusBadge,
+  StatusText,
+  Actions,
+  ActionButton,
+  ActionButtonText,
+  ImagePlaceholder,
+  ServiceFooter,
+  QuickActions,
+  QuickActionButton,
 } from "./styles";
 
 const ServiceManageCard = ({ service, onEdit, onDelete, testID }) => {
+  const navigation = useNavigation();
   const {
+    id,
     images,
     title,
     category,
     priceStartingAt,
     priceUnit,
     rating = 0,
+    totalRatings = 0,
+    isActive = true,
   } = service;
+
+  const handlePress = () => {
+    navigation.navigate("ServicoDetalhes", { id });
+  };
 
   return (
     <Card testID={testID}>
-      <ServiceImage source={{ uri: images[0] }} testID={`${testID}-image`} />
-      <ServiceInfo>
-        <Title>{title}</Title>
-        <Category>{category}</Category>
-        <Price>
-          R$ {priceStartingAt} / {priceUnit}
-        </Price>
-        <Rating>
-          <Ionicons name="star" size={16} color="#FFC107" />
-          <RatingText>{rating.toFixed(1)}</RatingText>
-        </Rating>
-      </ServiceInfo>
-      <Actions>
-        <ActionButton onPress={() => onEdit(service)} testID={`${testID}-edit`}>
-          <Ionicons name="pencil" size={16} color="#333" />
-        </ActionButton>
-        <ActionButton
-          onPress={() => onDelete(service.id)}
-          danger
-          testID={`${testID}-delete`}
-        >
-          <Ionicons name="trash" size={16} color="#D32F2F" />
-        </ActionButton>
-      </Actions>
+      <CardPressable onPress={handlePress}>
+        {/* Imagem menor */}
+        {images?.[0] ? (
+          <ServiceImage source={{ uri: images[0] }} />
+        ) : (
+          <ImagePlaceholder>
+            <Ionicons name="image-outline" size={24} color="#ccc" />
+          </ImagePlaceholder>
+        )}
+
+        <ServiceInfo>
+          <ServiceHeader>
+            <Title numberOfLines={1}>{title}</Title>
+            {/* <StatusBadge isActive={isActive}>
+              <StatusText isActive={isActive}>
+                { isActive ? "●" : "○" }
+              </StatusText>
+            </StatusBadge> */}
+          </ServiceHeader>
+
+          <CategoryText>{category}</CategoryText>
+
+          <ServiceFooter>
+            <Price>R$ {priceStartingAt?.toFixed(2)?.replace(".", ",")}</Price>
+            <Rating>
+              <Ionicons name="star" size={12} color="#FFC107" />
+              <RatingText>{rating > 0 ? rating.toFixed(1) : "0.0"}</RatingText>
+            </Rating>
+          </ServiceFooter>
+        </ServiceInfo>
+
+        {/* Ações inline e discretas */}
+        <QuickActions>
+          <QuickActionButton onPress={() => onEdit(service)}>
+            <Ionicons name="pencil" size={18} color="#666" />
+          </QuickActionButton>
+          <QuickActionButton onPress={() => onDelete(service.id)}>
+            <Ionicons name="trash" size={18} color="#dc3545" />
+          </QuickActionButton>
+        </QuickActions>
+      </CardPressable>
     </Card>
   );
 };

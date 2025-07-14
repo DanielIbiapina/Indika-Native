@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from "@react-navigation/native";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +17,8 @@ import { useOrder } from "../../contexts/orderContext";
 import { reviewService } from "../../services/reviewService";
 import OrderCard from "../../components/orderCard";
 import SearchBar from "../../components/searchBar";
+import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
+import { useBadge } from "../../contexts/badgeContext";
 
 import {
   Container,
@@ -39,15 +45,17 @@ const ACTIVE_STATUS = [
   "QUOTE_ACCEPTED",
   "PAYMENT_PENDING",
   "PENDING_CONFIRMATION",
+  "PAID",
 ];
 
-const COMPLETED_STATUS = ["COMPLETED", "CANCELLED", "QUOTE_REJECTED", "PAID"];
+const COMPLETED_STATUS = ["COMPLETED", "CANCELLED", "QUOTE_REJECTED"];
 
 const Pedidos = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { signed: isLoggedIn, user } = useAuth();
   const { orderList, loadOrders, loading } = useOrder();
+  const { clearBadge, refreshBadgesFromServer } = useBadge();
 
   const [activeTab, setActiveTab] = useState("active");
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -71,6 +79,7 @@ const Pedidos = () => {
     loadOrders();
     if (isLoggedIn && user) {
       loadUserReviews();
+      refreshBadgesFromServer();
     }
   }, [isLoggedIn, user]);
 
@@ -102,6 +111,37 @@ const Pedidos = () => {
     return unsubscribe;
   }, [navigation, route.params]);
 
+  useEffect(() => {
+    // 🎯 LISTENER: Atualizar quando status de pedido mudar
+    const handleOrderStatusUpdated = () => {
+      console.log("📦 Status de pedido atualizado - atualizando lista");
+      loadOrders();
+      loadUserReviews();
+    };
+
+    // ✨ NOVO: Listener para quando pedido for criado
+    const handleOrderCreated = (orderData) => {
+      console.log("🎉 Novo pedido criado - atualizando lista", orderData?.id);
+      loadOrders();
+      if (isLoggedIn && user) {
+        loadUserReviews();
+      }
+    };
+
+    // Registrar listeners
+    eventEmitter.on(EVENTS.ORDER_STATUS_UPDATED, handleOrderStatusUpdated);
+    eventEmitter.on(EVENTS.ORDER_CREATED, handleOrderCreated);
+
+    // 🧹 CLEANUP
+    return () => {
+      eventEmitter.removeListener(
+        EVENTS.ORDER_STATUS_UPDATED,
+        handleOrderStatusUpdated
+      );
+      eventEmitter.removeListener(EVENTS.ORDER_CREATED, handleOrderCreated);
+    };
+  }, [isLoggedIn, user]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -112,6 +152,13 @@ const Pedidos = () => {
       setRefreshing(false);
     }
   };
+
+  // Limpar badge quando a tela é focada
+  useFocusEffect(
+    useCallback(() => {
+      clearBadge("pedidos");
+    }, [])
+  );
 
   if (!isLoggedIn) {
     return (

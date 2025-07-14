@@ -35,6 +35,7 @@ export const communityService = {
   getUserCommunities: async () => {
     try {
       const response = await api.get("/communities/me");
+      console.log("🔍 Comunidades do usuário:", response.data);
       return response.data;
     } catch (error) {
       throw handleError(error);

@@ -16,6 +16,8 @@ import {
 } from "./styles";
 import { Animated, Alert } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { orderService } from "../../services/orderService";
+import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
 
 const RECOMMENDATION_TYPES = {
   INDICA: "indica",
@@ -64,6 +66,9 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus, testID }) => {
         orderId,
         ...formData,
       });
+
+      // 🔥 3. Emitir evento para atualizar as listas
+      emitOrderStatusUpdated({ id: orderId, status: "COMPLETED" });
 
       // Resetar form após sucesso
       setFormData({

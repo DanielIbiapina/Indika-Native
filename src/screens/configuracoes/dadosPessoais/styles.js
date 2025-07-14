@@ -55,3 +55,10 @@ export const LoadingSpinner = styled(ActivityIndicator).attrs({
   color: "#fff",
   size: "small",
 })``;
+
+export const HelperText = styled.Text`
+  color: #666;
+  font-size: 12px;
+  margin-top: 4px;
+  font-style: italic;
+`;

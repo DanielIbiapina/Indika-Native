@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { ScrollView, ActivityIndicator, Dimensions } from "react-native";
+import {
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
+  RefreshControl,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -26,6 +31,7 @@ import {
   EmptyMessage,
   CommunityList,
 } from "./styles";
+import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
 
 const { width: viewportWidth } = Dimensions.get("window");
 
@@ -45,6 +51,7 @@ const Comunidades = () => {
     user: null,
     isSearching: false,
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadCommunities();
@@ -72,6 +79,7 @@ const Comunidades = () => {
       console.error(err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -163,9 +171,10 @@ const Comunidades = () => {
     navigation.navigate("PerfilVisitante", { userId: user.id });
   };
 
-  const renderCommunityItem = ({ item }) => (
-    <CommunityCard {...item} testID={`community-${item.id}`} />
-  );
+  const renderCommunityItem = ({ item }) => {
+    console.log(item);
+    return <CommunityCard {...item} testID={`community-${item.id}`} />;
+  };
 
   const renderCommunitySection = (data, title, subtitle) => {
     if (!data?.length) return null;
@@ -210,6 +219,41 @@ const Comunidades = () => {
       searchResults.communities.userCommunities.length > 0 ||
       searchResults.user !== null);
 
+  // ✨ NOVO: Pull to refresh handler
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadCommunities();
+  };
+
+  // ✨ NOVO: Event listeners
+  useEffect(() => {
+    const handleCommunityCreated = (community) => {
+      console.log("🏘️ Nova comunidade criada - atualizando lista");
+      loadCommunities();
+    };
+
+    const handleCommunityJoined = ({ community, user: joinedUser }) => {
+      console.log("🎉 Usuário entrou em comunidade - atualizando lista");
+      loadCommunities();
+    };
+
+    // Registrar listeners
+    eventEmitter.on(EVENTS.COMMUNITY_CREATED, handleCommunityCreated);
+    eventEmitter.on(EVENTS.COMMUNITY_JOINED, handleCommunityJoined);
+
+    // 🧹 CLEANUP
+    return () => {
+      eventEmitter.removeListener(
+        EVENTS.COMMUNITY_CREATED,
+        handleCommunityCreated
+      );
+      eventEmitter.removeListener(
+        EVENTS.COMMUNITY_JOINED,
+        handleCommunityJoined
+      );
+    };
+  }, []);
+
   if (loading) {
     return (
       <LoaderContainer>
@@ -239,6 +283,14 @@ const Comunidades = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={["#422680"]}
+            tintColor="#422680"
+          />
+        }
       >
         {isLoggedIn && !searchQuery.trim() && (
           <AddButtonContainer>

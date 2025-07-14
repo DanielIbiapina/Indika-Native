@@ -2,19 +2,22 @@ import styled from "styled-components/native";
 
 export const TooltipContainer = styled.View`
   position: absolute;
-  top: 70px;
+  top: 60px;
   right: 16px;
+  left: 16px;
   background-color: #fff;
-  padding: 12px;
-  border-radius: 8px;
-  elevation: 4;
+  padding: 16px;
+  border-radius: 12px;
+  elevation: 20;
+  z-index: 1000;
   shadow-color: #000;
-  shadow-offset: 0px 2px;
-  shadow-opacity: 0.25;
-  shadow-radius: 3.84px;
-  max-width: 250px;
+  shadow-offset: 0px 4px;
+  shadow-opacity: 0.3;
+  shadow-radius: 6px;
+  max-width: none;
   flex-direction: row;
   align-items: center;
+  border: 2px solid #422680;
 `;
 
 export const IconContainer = styled.View`
@@ -23,8 +26,10 @@ export const IconContainer = styled.View`
 
 export const TooltipText = styled.Text`
   color: ${({ theme }) => theme.colors.text.primary};
-  font-size: 14px;
+  font-size: 15px;
   flex: 1;
+  font-weight: 500;
+  line-height: 20px;
 `;
 
 export const TooltipArrow = styled.View`
@@ -45,10 +50,11 @@ export const TooltipArrow = styled.View`
 
 export const CloseButton = styled.TouchableOpacity`
   position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #fff;
-  border-radius: 12px;
-  padding: 2px;
-  elevation: 4;
+  top: -10px;
+  right: -10px;
+  background-color: #422680;
+  border-radius: 15px;
+  padding: 4px;
+  elevation: 6;
+  border: 2px solid #fff;
 `;

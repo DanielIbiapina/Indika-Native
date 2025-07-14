@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Modal } from "react-native";
+import { Modal, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { userService } from "../../services/userService";
 import ImageUpload from "../imageUpload";
@@ -7,11 +7,14 @@ import {
   ModalOverlay,
   ModalContent,
   ModalHeader,
+  ModalTitle,
+  ScrollContainer,
   Form,
   Input,
   Button,
   ErrorMessage,
   ButtonText,
+  InfoText,
 } from "./styles";
 
 const EditProfileModal = ({ profile, onUpdate, onClose }) => {
@@ -28,6 +31,18 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
       setLoading(true);
       setError("");
 
+      // ✅ Validações básicas
+      if (!formData.name.trim()) {
+        setError("Nome é obrigatório");
+        return;
+      }
+
+      // ✅ NOVO: Email opcional, mas se preenchido deve ser válido
+      if (formData.email.trim() && !formData.email.includes("@")) {
+        setError("Se informado, o email deve ser válido");
+        return;
+      }
+
       const updatedProfile = { ...profile };
 
       // Atualiza avatar se houver uma nova imagem
@@ -43,12 +58,17 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
         updatedProfile.avatar = avatarResponse?.avatar || updatedProfile.avatar;
       }
 
-      // Atualiza nome se foi modificado
+      // ✅ Atualiza nome E email se foram modificados
+      const profileChanges = {};
       if (formData.name !== profile.name) {
-        const profileResponse = await userService.updateProfile({
-          name: formData.name,
-          //isServiceProvider: profile.isServiceProvider,
-        });
+        profileChanges.name = formData.name;
+      }
+      if (formData.email !== profile.email) {
+        profileChanges.email = formData.email;
+      }
+
+      if (Object.keys(profileChanges).length > 0) {
+        const profileResponse = await userService.updateProfile(profileChanges);
         Object.assign(updatedProfile, profileResponse);
       }
 
@@ -62,10 +82,11 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
   };
 
   return (
-    <Modal visible transparent animationType="fade">
+    <Modal visible transparent animationType="slide">
       <ModalOverlay>
         <ModalContent>
           <ModalHeader>
+            <ModalTitle>Editar Perfil</ModalTitle>
             <Ionicons
               name="close"
               size={24}
@@ -75,46 +96,61 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
             />
           </ModalHeader>
 
-          <Form>
-            <ImageUpload
-              value={formData.avatar}
-              onChange={(value) =>
-                setFormData((prev) => ({ ...prev, avatar: value }))
-              }
-              maxSize={2}
-              label="Foto de perfil"
-              currentImage={profile.avatar}
-              testID="avatar-upload"
-            />
+          <ScrollContainer
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ flexGrow: 1 }}
+          >
+            <Form>
+              <ImageUpload
+                value={formData.avatar}
+                onChange={(value) =>
+                  setFormData((prev) => ({ ...prev, avatar: value }))
+                }
+                maxSize={2}
+                label="Foto de perfil"
+                currentImage={profile.avatar}
+                testID="avatar-upload"
+              />
 
-            <Input
-              placeholder="Nome completo"
-              value={formData.name}
-              onChangeText={(value) =>
-                setFormData((prev) => ({ ...prev, name: value }))
-              }
-              testID="name-input"
-            />
+              <Input
+                placeholder="Nome completo"
+                value={formData.name}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({ ...prev, name: value }))
+                }
+                testID="name-input"
+              />
 
-            <Input
-              placeholder="E-mail"
-              value={formData.email}
-              editable={false}
-              testID="email-input"
-            />
+              {/* ✅ NOVO: Email editável */}
+              <Input
+                placeholder="E-mail"
+                value={formData.email}
+                onChangeText={(value) =>
+                  setFormData((prev) => ({ ...prev, email: value }))
+                }
+                keyboardType="email-address"
+                autoCapitalize="none"
+                testID="email-input"
+              />
 
-            {error && <ErrorMessage>{error}</ErrorMessage>}
+              <InfoText>
+                💡 Email é opcional. Se informado, pode exigir verificação
+                adicional
+              </InfoText>
 
-            <Button
-              onPress={handleSubmit}
-              disabled={loading}
-              testID="save-button"
-            >
-              <ButtonText>
-                {loading ? "Salvando..." : "Salvar alterações"}
-              </ButtonText>
-            </Button>
-          </Form>
+              {error && <ErrorMessage>{error}</ErrorMessage>}
+
+              <Button
+                onPress={handleSubmit}
+                disabled={loading}
+                testID="save-button"
+              >
+                <ButtonText>
+                  {loading ? "Salvando..." : "Salvar alterações"}
+                </ButtonText>
+              </Button>
+            </Form>
+          </ScrollContainer>
         </ModalContent>
       </ModalOverlay>
     </Modal>

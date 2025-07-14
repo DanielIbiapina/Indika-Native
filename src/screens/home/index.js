@@ -34,16 +34,11 @@ import {
   ServiceList,
 } from "./styles";
 import { useTutorial } from "../../contexts/tutorialContext";
+import { CATEGORIES, CATEGORY_ICONS } from "../../constants/categories";
+import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
+import { useBadge } from "../../contexts/badgeContext";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-const CATEGORY_ICONS = {
-  "Assistência Técnica": "build",
-  "Reformas e Reparos": "home-repair-service",
-  Eventos: "event",
-  "Serviços Domésticos": "home",
-  Aulas: "school",
-};
 
 const Home = () => {
   const { signed, user, logout } = useAuth();
@@ -63,6 +58,8 @@ const Home = () => {
   const [tutorialStep, setTutorialStep] = useState(0);
   const { startTutorial, endTutorial, shouldShowTutorial, resetTutorials } =
     useTutorial();
+
+  const { testIncrement } = useBadge();
 
   // ✅ NOVO: Função de busca
   const performSearch = (query) => {
@@ -388,6 +385,51 @@ const Home = () => {
     );
   };
 
+  useEffect(() => {
+    // 🎯 LISTENERS: Atualizar quando serviços ou comunidades mudarem
+    const handleServiceCreated = () => {
+      console.log("🎉 Novo serviço criado - atualizando Home");
+      fetchData();
+    };
+
+    const handleServiceUpdated = () => {
+      console.log("✏️ Serviço atualizado - atualizando Home");
+      fetchData();
+    };
+
+    const handleCommunityCreated = () => {
+      console.log("🏘️ Nova comunidade criada - atualizando Home");
+      fetchData();
+    };
+
+    // ✨ NOVO: Handler para quando alguém entra em comunidade
+    const handleCommunityJoined = ({ community, user: joinedUser }) => {
+      console.log("🎉 Usuário entrou em comunidade - atualizando Home");
+      // Atualizar porque as indicações podem mudar
+      fetchData();
+    };
+
+    // Registrar listeners
+    eventEmitter.on(EVENTS.SERVICE_CREATED, handleServiceCreated);
+    eventEmitter.on(EVENTS.SERVICE_UPDATED, handleServiceUpdated);
+    eventEmitter.on(EVENTS.COMMUNITY_CREATED, handleCommunityCreated);
+    eventEmitter.on(EVENTS.COMMUNITY_JOINED, handleCommunityJoined);
+
+    // 🧹 CLEANUP
+    return () => {
+      eventEmitter.removeListener(EVENTS.SERVICE_CREATED, handleServiceCreated);
+      eventEmitter.removeListener(EVENTS.SERVICE_UPDATED, handleServiceUpdated);
+      eventEmitter.removeListener(
+        EVENTS.COMMUNITY_CREATED,
+        handleCommunityCreated
+      );
+      eventEmitter.removeListener(
+        EVENTS.COMMUNITY_JOINED,
+        handleCommunityJoined
+      );
+    };
+  }, []);
+
   if (loading) {
     return (
       <LoaderContainer>
@@ -463,7 +505,7 @@ const Home = () => {
         }
       >
         <Container>
-          {!signed && (
+          {/*!signed && (
             <LoginBanner>
               <LoginText>
                 Entre para ter acesso a mais serviços e comunidades
@@ -472,7 +514,7 @@ const Home = () => {
                 <LoginButtonText>Entrar</LoginButtonText>
               </LoginButton>
             </LoginBanner>
-          )}
+          )*/}
 
           <Title onPress={logout}>
             Boas-vindas{user ? `, ${user.name}` : ""}
@@ -539,6 +581,29 @@ const Home = () => {
             >
               <Text style={{ color: "#666" }}>Reset Tutorial (DEV)</Text>
             </TouchableOpacity>
+          )}
+
+          {/* ✨ BOTÕES DE TESTE - REMOVER DEPOIS */}
+          {__DEV__ && (
+            <View
+              style={{ padding: 20, backgroundColor: "#f0f0f0", margin: 10 }}
+            >
+              <Text style={{ fontWeight: "bold", marginBottom: 10 }}>
+                🧪 TESTE BADGES:
+              </Text>
+              <TouchableOpacity
+                style={{ backgroundColor: "#007bff", padding: 10, margin: 5 }}
+                onPress={() => testIncrement("pedidos")}
+              >
+                <Text style={{ color: "white" }}>Teste Badge Pedidos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ backgroundColor: "#28a745", padding: 10, margin: 5 }}
+                onPress={() => testIncrement("solicitacoes")}
+              >
+                <Text style={{ color: "white" }}>Teste Badge Solicitações</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </Container>
       </ScrollView>

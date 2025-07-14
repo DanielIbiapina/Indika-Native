@@ -20,10 +20,10 @@ const OrderDetailsTooltip = ({ onClose }) => {
       useNativeDriver: true,
     }).start();
 
-    // Auto-hide after 5 seconds
+    // ✅ NOVO: Aumentar tempo para 10 segundos
     const timer = setTimeout(() => {
       handleClose();
-    }, 5000);
+    }, 10000); // ✅ Era 5000, agora 10000
 
     return () => clearTimeout(timer);
   }, []);
@@ -44,11 +44,12 @@ const OrderDetailsTooltip = ({ onClose }) => {
         <Ionicons name="information-circle" size={24} color="#422680" />
       </IconContainer>
       <TooltipText>
-        Você pode acessar os detalhes completos do seu pedido a qualquer momento
+        💡 Dica: Clique na setinha ao lado dos orçamentos para ver todos os
+        detalhes do pedido
       </TooltipText>
       <TooltipArrow />
       <CloseButton onPress={handleClose}>
-        <Ionicons name="close" size={20} color="#666" />
+        <Ionicons name="close" size={16} color="#fff" /> {/* ✅ Cor branca */}
       </CloseButton>
     </TooltipContainer>
   );

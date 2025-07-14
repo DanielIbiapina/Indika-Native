@@ -30,6 +30,8 @@ import {
   SectionSubtitle,
   MemberInfo,
 } from "./styles"; // Importando os estilos
+import { emitCommunityJoined } from "../../utils/eventEmitter"; // ✨ ADICIONAR
+import estreloamigos from "../../assets/estreloamigos.jpg";
 
 const ComunidadeDetalhes = () => {
   const route = useRoute();
@@ -68,6 +70,10 @@ const ComunidadeDetalhes = () => {
     try {
       await communityService.join(id);
       setIsMember(true);
+
+      // ✨ NOVO: Emitir evento
+      emitCommunityJoined(community, user);
+
       loadCommunityData(); // Recarrega para atualizar contadores
     } catch (error) {
       console.error("Erro ao entrar na comunidade:", error);
@@ -109,6 +115,26 @@ const ComunidadeDetalhes = () => {
     );
   };
 
+  // ✅ NOVO: Adicionar a mesma lógica de imagem padrão
+  const DEFAULT_FRIENDS_IMAGE = estreloamigos;
+
+  const getImageSource = (image, name, categories) => {
+    if (image) {
+      return { uri: image };
+    }
+
+    if (
+      name?.toLowerCase().includes("amigos") ||
+      categories?.includes("friends")
+    ) {
+      return DEFAULT_FRIENDS_IMAGE;
+    }
+
+    return {
+      uri: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+    };
+  };
+
   if (loading) {
     return (
       <LoaderContainer>
@@ -122,7 +148,14 @@ const ComunidadeDetalhes = () => {
   return (
     <Container>
       <CommunityCard>
-        <CommunityImage source={{ uri: community.image }} />
+        <CommunityImage
+          source={getImageSource(
+            community.image,
+            community.name,
+            community.categories
+          )}
+          defaultSource={DEFAULT_FRIENDS_IMAGE}
+        />
         <Content>
           <Title>{community.name}</Title>
           <Description>{community.description}</Description>
