@@ -264,7 +264,11 @@ const Login = () => {
                 )}
 
                 <ForgotPassword
-                  onPress={() => navigation.navigate("ForgotPasswordPhone")}
+                  onPress={() =>
+                    navigation.navigate("AuthNavigator", {
+                      screen: "EsqueceuSenhaPhone",
+                    })
+                  }
                 >
                   <Text>Esqueceu sua senha?</Text>
                 </ForgotPassword>
@@ -275,7 +279,7 @@ const Login = () => {
                   </ButtonText>
                 </Button>
 
-                <Divider>
+                {/*<Divider>
                   <DividerLine />
                   <DividerText>ou continue com</DividerText>
                   <DividerLine />
@@ -286,7 +290,7 @@ const Login = () => {
                   <SocialButtonText provider="google">
                     Continuar com Google
                   </SocialButtonText>
-                </SocialButton>
+                </SocialButton>*/}
 
                 <ToggleText onPress={handleSignupPress}>
                   <Text>Ainda não tem conta? Cadastre-se</Text>

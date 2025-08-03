@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Platform, View, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MessageItem from "../messageItem";
@@ -34,6 +34,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { format } from "date-fns";
 import { isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useToast } from "../../hooks/useToast";
+import { eventEmitter } from "../../utils/eventEmitter";
+import { EVENTS } from "../../utils/eventEmitter";
+import { paymentService } from "../../services/paymentService";
 
 const TelaChat = ({
   messages,
@@ -56,7 +60,9 @@ const TelaChat = ({
   const [currentOrderId, setCurrentOrderId] = useState(null);
   const [isProvider, setIsProvider] = useState(false);
   const [orderData, setOrderData] = useState(null);
+  const [quotationLoading, setQuotationLoading] = useState(false); // ✅ ADICIONAR esta linha
   const navigation = useNavigation();
+  const { showSuccess, showError } = useToast();
 
   //console.log("messages", messages);
   //console.log("selectedChat", selectedChat);
@@ -85,69 +91,40 @@ const TelaChat = ({
     return selectedChat.orders[0]?.id || selectedChat.currentOrderId;
   }, [messages, selectedChat]);
 
-  // Função para carregar dados do pedido
-  const loadOrderData = useCallback(
-    async (orderIdToLoad) => {
-      if (!orderIdToLoad) return;
-
-      try {
-        console.log("Carregando dados do pedido:", orderIdToLoad);
-        const orderDetails = await orderService.getOrder(orderIdToLoad);
-        console.log("Dados do pedido carregados:", orderDetails);
-
-        setOrderData(orderDetails);
-        setIsProvider(orderDetails.providerId === userId);
-
-        console.log("É prestador?", orderDetails.providerId === userId);
-        console.log("Provider ID:", orderDetails.providerId);
-        console.log("User ID:", userId);
-      } catch (error) {
-        console.error("Erro ao carregar dados do pedido:", error);
-      }
-    },
-    [userId]
-  );
-
   // useEffect para identificar e carregar o pedido atual
   useEffect(() => {
-    const newOrderId = identifyCurrentOrder();
-    console.log("Order ID identificado:", newOrderId);
+    let orderIdToUse = null;
 
-    if (newOrderId && newOrderId !== currentOrderId) {
-      setCurrentOrderId(newOrderId);
-      loadOrderData(newOrderId);
-    }
-  }, [
-    messages,
-    selectedChat,
-    identifyCurrentOrder,
-    currentOrderId,
-    loadOrderData,
-  ]);
-
-  // useEffect adicional para quando o orderId vem diretamente como prop
-  useEffect(() => {
-    if (orderId && orderId !== currentOrderId) {
-      console.log("Usando orderId da prop:", orderId);
-      setCurrentOrderId(orderId);
-      loadOrderData(orderId);
-    }
-  }, [orderId, currentOrderId, loadOrderData]);
-
-  // useEffect para quando selectedChat tem currentOrderId
-  useEffect(() => {
-    if (
-      selectedChat?.currentOrderId &&
-      selectedChat.currentOrderId !== currentOrderId
-    ) {
-      console.log(
-        "Usando currentOrderId do selectedChat:",
-        selectedChat.currentOrderId
+    // Prioridade: orderId prop > currentOrderId do chat > identificado nas mensagens
+    if (orderId) {
+      orderIdToUse = orderId;
+    } else if (selectedChat?.currentOrderId) {
+      orderIdToUse = selectedChat.currentOrderId;
+    } else {
+      // Identificar nas mensagens
+      const quotationMessage = messages?.find(
+        (msg) => msg.type === "quotation"
       );
-      setCurrentOrderId(selectedChat.currentOrderId);
-      loadOrderData(selectedChat.currentOrderId);
+      if (quotationMessage) {
+        try {
+          const content =
+            typeof quotationMessage.content === "string"
+              ? JSON.parse(quotationMessage.content)
+              : quotationMessage.content;
+          orderIdToUse = content.orderId;
+        } catch (error) {
+          console.error("Erro ao extrair orderId:", error);
+        }
+      }
     }
-  }, [selectedChat?.currentOrderId, currentOrderId, loadOrderData]);
+
+    // Se encontrou um orderId diferente do atual, atualiza
+    if (orderIdToUse && orderIdToUse !== currentOrderId) {
+      console.log("Atualizando orderId para:", orderIdToUse);
+      setCurrentOrderId(orderIdToUse);
+      loadOrderData(orderIdToUse);
+    }
+  }, [orderId, selectedChat?.currentOrderId, messages, currentOrderId]);
 
   // Verifica se deve mostrar o tooltip
   useEffect(() => {
@@ -165,6 +142,24 @@ const TelaChat = ({
 
     checkTooltipStatus();
   }, []);
+
+  // ✅ ADICIONAR: Listener para mudanças de status
+  useEffect(() => {
+    const handleOrderUpdate = (updatedOrder) => {
+      if (updatedOrder.id === currentOrderId) {
+        setOrderData(updatedOrder);
+      }
+    };
+
+    eventEmitter.on(EVENTS.ORDER_STATUS_UPDATED, handleOrderUpdate);
+
+    return () => {
+      eventEmitter.removeListener(
+        EVENTS.ORDER_STATUS_UPDATED,
+        handleOrderUpdate
+      );
+    };
+  }, [currentOrderId]);
 
   const handleQuotationAction = async (action, quotationMessage) => {
     try {
@@ -192,13 +187,16 @@ const TelaChat = ({
             if (onRefresh) {
               await onRefresh(1);
             }
-            Alert.alert("Sucesso", "Orçamento aceito com sucesso!");
+            showSuccess("Orçamento aceito!", "Orçamento aceito com sucesso!");
           }
           break;
 
         case "reject":
           await orderService.rejectQuotation(quotationData.orderId);
-          Alert.alert("Aviso", "Orçamento rejeitado");
+          showSuccess(
+            "Orçamento rejeitado!",
+            "Orçamento rejeitado com sucesso!"
+          );
           break;
 
         default:
@@ -207,12 +205,17 @@ const TelaChat = ({
       }
     } catch (error) {
       console.error("Erro detalhado:", error);
-      Alert.alert("Erro", "Não foi possível processar sua solicitação");
+      showError(
+        "Erro ao processar solicitação!",
+        "Não foi possível processar sua solicitação"
+      );
     }
   };
 
   const handleQuotationConfirm = async (quotationData) => {
     try {
+      setQuotationLoading(true); // ✅ MUDANÇA: usar setQuotationLoading
+
       const quotationPayload = {
         ...quotationData,
         messageType: "QUOTE",
@@ -254,16 +257,18 @@ const TelaChat = ({
         await onRefresh(1);
       }
 
-      Alert.alert("Sucesso", "Orçamento enviado com sucesso!");
+      showSuccess("Orçamento enviado!", "Orçamento enviado com sucesso!");
     } catch (error) {
       console.error("Erro detalhado:", error);
       if (error.response?.data?.message) {
         console.error("Resposta do servidor:", error.response.data);
       }
-      Alert.alert(
-        "Erro",
+      showError(
+        "Erro ao enviar orçamento!",
         "Não foi possível enviar o orçamento. Tente novamente."
       );
+    } finally {
+      setQuotationLoading(false); // ✅ MUDANÇA: usar setQuotationLoading
     }
   };
 
@@ -272,6 +277,37 @@ const TelaChat = ({
     setSelectedQuotation(null);
   };
 
+  // ✅ ADICIONAR: Função para atualizar todas as quotations
+  const refreshAllQuotations = useCallback(async () => {
+    if (currentOrderId) {
+      try {
+        const updatedOrderData = await orderService.getOrder(currentOrderId);
+
+        // 🔑 CORREÇÃO: Buscar quotations também no refresh
+        try {
+          const quotations = await orderService.getQuotations(currentOrderId);
+          updatedOrderData.quotations = quotations;
+        } catch (quotationError) {
+          console.error(
+            "Erro ao carregar cotações no refresh:",
+            quotationError
+          );
+          updatedOrderData.quotations = [];
+        }
+
+        setOrderData(updatedOrderData);
+
+        // Forçar re-render das mensagens
+        if (onRefresh) {
+          await onRefresh();
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar quotations:", error);
+      }
+    }
+  }, [currentOrderId, onRefresh]);
+
+  // ✅ CORREÇÃO: Atualizar renderMessage para passar refresh
   const renderMessage = ({ item, index }) => {
     const showDateSeparator =
       index === messages.length - 1 ||
@@ -349,13 +385,12 @@ const TelaChat = ({
           <QuotationMessage
             message={item}
             isProvider={isProvider}
-            setIsProvider={setIsProvider}
-            onAccept={() => handleQuotationAction("accept", item)}
-            onReject={() => handleQuotationAction("reject", item)}
             orderId={currentOrderId}
             userId={userId}
             isOwn={item.senderId === userId}
             orderData={orderData}
+            onRefresh={refreshAllQuotations}
+            onAccept={(message) => handleQuotationAction("accept", message)}
           />
         ) : (
           <MessageItem
@@ -368,6 +403,55 @@ const TelaChat = ({
         )}
       </>
     );
+  };
+
+  // ✅ ADICIONAR: Debounce para loadOrderData
+  const [loadingOrderId, setLoadingOrderId] = useState(null);
+
+  const loadOrderData = useCallback(
+    async (orderIdToLoad) => {
+      if (!orderIdToLoad || loadingOrderId === orderIdToLoad) return;
+
+      try {
+        setLoadingOrderId(orderIdToLoad);
+        console.log("Carregando dados do pedido:", orderIdToLoad);
+
+        const orderDetails = await orderService.getOrder(orderIdToLoad);
+
+        // 🔑 CORREÇÃO: Buscar as quotations separadamente (igual ao pedidoDetalhes)
+        try {
+          const quotations = await orderService.getQuotations(orderIdToLoad);
+          orderDetails.quotations = quotations; // ✅ Adiciona as cotações
+        } catch (quotationError) {
+          console.error("Erro ao carregar cotações:", quotationError);
+          orderDetails.quotations = []; // ✅ Garante array vazio
+        }
+
+        console.log("Dados do pedido carregados:", orderDetails);
+
+        setOrderData(orderDetails);
+        setIsProvider(orderDetails.providerId === userId);
+      } catch (error) {
+        console.error("Erro ao carregar dados do pedido:", error);
+      } finally {
+        setLoadingOrderId(null);
+      }
+    },
+    [userId, loadingOrderId]
+  );
+
+  // ✅ DEBUG: Limite para console.log
+  const logCount = useRef(0);
+  const MAX_LOGS = 100;
+
+  const debugLog = (message, data) => {
+    if (logCount.current < MAX_LOGS) {
+      console.log(message, data);
+      logCount.current++;
+    } else if (logCount.current === MAX_LOGS) {
+      console.warn("🚨 LIMITE DE LOGS ATINGIDO - POSSÍVEL LOOP INFINITO!");
+      logCount.current++;
+    }
   };
 
   return (
@@ -417,6 +501,7 @@ const TelaChat = ({
         onClose={handleCloseModal}
         onConfirm={handleQuotationConfirm}
         initialData={selectedQuotation}
+        loading={quotationLoading} // ✅ OPCIONAL: passar loading para o modal
       />
     </Container>
   );

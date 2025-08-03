@@ -142,7 +142,14 @@ export const BadgeProvider = ({ children }) => {
 
       try {
         console.log("👤 Buscando pedidos como cliente...");
-        const clientOrders = await orderService.list({ role: "client" });
+        const clientOrdersResponse = await orderService.list({
+          role: "client",
+        });
+
+        // ✅ CORREÇÃO: Extrair orders do response
+        const clientOrders =
+          clientOrdersResponse.orders || clientOrdersResponse;
+
         console.log(
           `👤 Pedidos como cliente encontrados: ${clientOrders?.length || 0}`
         );
@@ -162,7 +169,14 @@ export const BadgeProvider = ({ children }) => {
       if (isProvider) {
         try {
           console.log("🔧 Buscando solicitações como prestador...");
-          const providerOrders = await orderService.list({ role: "provider" });
+          const providerOrdersResponse = await orderService.list({
+            role: "provider",
+          });
+
+          // ✅ CORREÇÃO: Extrair orders do response
+          const providerOrders =
+            providerOrdersResponse.orders || providerOrdersResponse;
+
           console.log(
             `🔧 Solicitações como prestador encontradas: ${
               providerOrders?.length || 0

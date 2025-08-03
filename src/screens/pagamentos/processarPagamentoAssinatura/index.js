@@ -34,6 +34,8 @@ const ProcessarPagamentoAssinatura = () => {
   const [checkoutUrl, setCheckoutUrl] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
+  // ✅ NOVO: Estado para informações do trial
+  const [trialInfo, setTrialInfo] = useState(null);
 
   const { plan } = route.params;
 
@@ -68,6 +70,20 @@ const ProcessarPagamentoAssinatura = () => {
       }
 
       console.log("Preferência criada com sucesso:", response.data.id);
+
+      // ✅ NOVO: Capturar informações do trial
+      if (response.data.trial) {
+        const { trial } = response.data;
+        setTrialInfo(trial);
+
+        // Mostrar mensagem do trial para o usuário
+        if (trial.message) {
+          Alert.alert("🎁 Período Gratuito Disponível!", trial.message, [
+            { text: "Continuar", style: "default" },
+          ]);
+        }
+      }
+
       setCheckoutUrl(response.data.init_point);
     } catch (error) {
       console.error("Erro ao criar preferência de assinatura:", error);
@@ -190,6 +206,35 @@ const ProcessarPagamentoAssinatura = () => {
 
   return (
     <Container>
+      {/* ✅ NOVO: Mostrar informações do trial se disponível */}
+      {trialInfo && (
+        <ServiceCard
+          style={{
+            backgroundColor: "#e8f5e8",
+            borderColor: "#4caf50",
+            borderWidth: 1,
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <Ionicons name="gift" size={20} color="#4caf50" />
+            <ServiceTitle style={{ marginLeft: 8, color: "#2e7d32" }}>
+              🎁 Período Gratuito
+            </ServiceTitle>
+          </View>
+          {trialInfo.message && (
+            <Text style={{ color: "#388e3c", fontSize: 14, lineHeight: 20 }}>
+              {trialInfo.message}
+            </Text>
+          )}
+        </ServiceCard>
+      )}
+
       {/*<ServiceCard>
         <ServiceTitle>Assinatura {plan.title}</ServiceTitle>
         <PriceContainer>

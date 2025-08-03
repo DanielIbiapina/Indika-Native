@@ -9,6 +9,8 @@ import AppNavigator from "./navigation/appNavigator"; // Importe o AppNavigator 
 import { StatusBar } from "expo-status-bar"; // Importar o StatusBar do Expo
 import { OrderProvider } from "./contexts/orderContext";
 import { TutorialProvider } from "./contexts/tutorialContext";
+import Toast from "react-native-toast-message";
+import { toastConfig } from "./config/toastConfig"; // ✅ ADICIONAR
 
 console.warn("O app carregou!"); // Essa mensagem aparecerá no logcat
 
@@ -60,6 +62,7 @@ export default function App() {
             <TutorialProvider>
               <AppNavigator />
               <StatusBar style="auto" />
+              <Toast config={toastConfig} />
             </TutorialProvider>
           </OrderProvider>
         </BadgeProvider>

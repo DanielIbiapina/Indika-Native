@@ -2,7 +2,7 @@
   "expo": {
     "name": "indika-native",
     "slug": "indika-native",
-    "version": "1.0.2",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.indika.app",
-      "buildNumber": "1"
+      "buildNumber": "2",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -39,7 +43,7 @@
         }
       ],
       "package": "com.indika.app",
-      "versionCode": 1,
+      "versionCode": 2,
       "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true
     },
@@ -67,6 +71,14 @@
           "icon": "./assets/icon.png",
           "color": "#422680",
           "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
         }
       ]
     ],

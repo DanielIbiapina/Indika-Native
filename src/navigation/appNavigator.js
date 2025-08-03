@@ -35,11 +35,10 @@ import DadosPessoais from "../screens/configuracoes/dadosPessoais";
 import Seguranca from "../screens/configuracoes/seguranca";
 import Notificacoes from "../screens/configuracoes/notificacoes";
 import Idioma from "../screens/configuracoes/idioma";
-import VisibilidadePerfil from "../screens/configuracoes/visibilidadePerfil";
+//import VisibilidadePerfil from "../screens/configuracoes/visibilidadePerfil";
 import Localizacao from "../screens/configuracoes/localizacao";
 import CentralAjuda from "../screens/configuracoes/centralDeAjuda";
 import TermosUso from "../screens/configuracoes/termosDeUso";
-import PoliticaPrivacidade from "../screens/configuracoes/politicaDePrivacidade";
 import Mensagens from "../screens/mensagens";
 import Pagamentos from "../screens/pagamentos";
 import AllReviews from "../screens/todasAvaliacoes"; // Importar a nova tela
@@ -136,6 +135,18 @@ const MainStack = () => {
       )}
 
       <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen
+        name="TermosUso"
+        component={TermosUso}
+        options={{
+          headerShown: true,
+          title: "Termos de Uso e Política de Privacidade",
+          headerTintColor: "#422680",
+          headerStyle: {
+            backgroundColor: "#fff",
+          },
+        }}
+      />
       <Stack.Screen
         name="ComunidadeDetalhes"
         component={ComunidadeDetalhes}
@@ -266,7 +277,7 @@ const MainStack = () => {
               },
             }}
           />
-          <Stack.Screen
+          {/*<Stack.Screen
             name="VisibilidadePerfil"
             component={VisibilidadePerfil}
             options={{
@@ -277,7 +288,7 @@ const MainStack = () => {
                 backgroundColor: "#fff",
               },
             }}
-          />
+          />*/}
           <Stack.Screen
             name="Localizacao"
             component={Localizacao}
@@ -296,30 +307,6 @@ const MainStack = () => {
             options={{
               headerShown: true,
               title: "Central de Ajuda",
-              headerTintColor: "#422680",
-              headerStyle: {
-                backgroundColor: "#fff",
-              },
-            }}
-          />
-          <Stack.Screen
-            name="TermosUso"
-            component={TermosUso}
-            options={{
-              headerShown: true,
-              title: "Termos de Uso",
-              headerTintColor: "#422680",
-              headerStyle: {
-                backgroundColor: "#fff",
-              },
-            }}
-          />
-          <Stack.Screen
-            name="PoliticaPrivacidade"
-            component={PoliticaPrivacidade}
-            options={{
-              headerShown: true,
-              title: "Política de Privacidade",
               headerTintColor: "#422680",
               headerStyle: {
                 backgroundColor: "#fff",

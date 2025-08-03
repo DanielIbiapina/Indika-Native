@@ -22,9 +22,9 @@ const ServiceCategoryCard = ({
   image,
   provider,
   stats,
-  price,
+  // price, // ❌ REMOVIDO
   description,
-  subcategories = [], // ✅ NOVO: Prop para subcategorias
+  subcategories = [],
 }) => {
   const navigation = useNavigation();
 
@@ -34,7 +34,6 @@ const ServiceCategoryCard = ({
       <ServiceInfo>
         <Title numberOfLines={2}>{title}</Title>
 
-        {/* ✅ NOVO: Mostrar subcategorias como tags */}
         {subcategories && subcategories.length > 0 && (
           <SubcategoriesContainer>
             {subcategories.slice(0, 2).map((subcategory, index) => (
@@ -58,7 +57,7 @@ const ServiceCategoryCard = ({
             {stats.averageRating.toFixed(1)} ({stats.totalReviews})
           </RatingText>
         </Rating>
-        <Price>{price}</Price>
+        {/* ❌ REMOVIDO: <Price>{price}</Price> */}
         <Description numberOfLines={1}>{description}</Description>
       </ServiceInfo>
     </Card>

@@ -80,3 +80,24 @@ export const NextText = styled.Text`
   font-size: 16px;
   font-weight: bold;
 `;
+
+export const LinksContainer = styled.View`
+  margin-top: 20px;
+  align-items: center;
+`;
+
+export const LinkButton = styled.TouchableOpacity`
+  background-color: transparent;
+  border: 1px solid #422680;
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  min-width: 200px;
+  align-items: center;
+`;
+
+export const LinkButtonText = styled.Text`
+  color: #422680;
+  font-size: 14px;
+  font-weight: 500;
+`;

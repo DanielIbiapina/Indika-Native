@@ -335,3 +335,17 @@ export const TimeOptionText = styled.Text`
   color: ${({ theme }) => theme.colors.text.primary};
   margin-left: 8px;
 `;
+
+export const LocationInfo = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-top: 8px;
+  padding: 8px 0;
+`;
+
+export const LocationText = styled.Text`
+  margin-left: 6px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+`;

@@ -73,7 +73,7 @@ const ForgotPasswordPhone = ({ navigation }) => {
       );
 
       if (result.success) {
-        navigation.navigate("ForgotPasswordCode", {
+        navigation.navigate("EsqueceuSenhaCode", {
           phoneNumber: formattedNumber,
           verificationId: result.verificationId,
         });

@@ -160,6 +160,7 @@ import { chatService } from "../../services/chatService";
 import { paymentService } from "../../services/paymentService";
 import { reviewService } from "../../services/reviewService";
 import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
+import { useToast } from "../../hooks/useToast";
 
 const PedidoDetalhes = ({ route }) => {
   const { orderId } = route.params;
@@ -175,6 +176,7 @@ const PedidoDetalhes = ({ route }) => {
   const [userReviews, setUserReviews] = useState([]);
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState("details");
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadOrderDetails();
@@ -285,14 +287,11 @@ const PedidoDetalhes = ({ route }) => {
   const handleAcceptQuotation = async () => {
     try {
       await orderService.acceptQuotation(orderId);
-      Alert.alert("Sucesso", "Orçamento aceito com sucesso!");
+      showSuccess("Aceito!", "Orçamento aceito com sucesso");
       loadOrderDetails();
       emitOrderStatusUpdated(activeOrder);
     } catch (error) {
-      Alert.alert(
-        "Erro",
-        "Não foi possível aceitar o orçamento. Tente novamente."
-      );
+      showError("Erro!", "Não foi possível aceitar o orçamento");
     }
   };
 
@@ -308,13 +307,16 @@ const PedidoDetalhes = ({ route }) => {
           onPress: async () => {
             try {
               await orderService.rejectQuotation(orderId);
-              Alert.alert("Sucesso", "Orçamento rejeitado com sucesso!");
+              showSuccess(
+                "Orçamento rejeitado! ❌",
+                "Proposta foi recusada com sucesso"
+              );
               loadOrderDetails();
               emitOrderStatusUpdated(activeOrder);
             } catch (error) {
-              Alert.alert(
-                "Erro",
-                "Não foi possível rejeitar o orçamento. Tente novamente."
+              showError(
+                "Erro ao rejeitar! ❌",
+                "Não foi possível rejeitar o orçamento"
               );
             }
           },
@@ -346,15 +348,12 @@ const PedidoDetalhes = ({ route }) => {
       await messageService.sendMessage(chat.id, chatMessage);
 
       setIsQuotationModalVisible(false);
-      Alert.alert("Sucesso", "Orçamento enviado com sucesso!");
+      showSuccess("Orçamento enviado!", "Proposta foi enviada para o cliente");
       loadOrderDetails();
       emitOrderStatusUpdated(activeOrder);
     } catch (error) {
       console.error("Erro ao enviar orçamento:", error);
-      Alert.alert(
-        "Erro",
-        "Não foi possível enviar o orçamento. Tente novamente."
-      );
+      showError("Erro no orçamento! ❌", "Não foi possível enviar a proposta");
     }
   };
 
@@ -396,12 +395,15 @@ const PedidoDetalhes = ({ route }) => {
 
       // Confirmar recebimento
       await paymentService.confirmDirectPayment(orderPayment.id);
-      Alert.alert("Sucesso", "Pagamento confirmado com sucesso!");
+      showSuccess("Pagamento confirmado!", "Pagamento confirmado com sucesso!");
       loadOrderDetails();
       emitOrderStatusUpdated(activeOrder);
     } catch (error) {
       console.error("Erro:", error);
-      Alert.alert("Erro", "Não foi possível confirmar o pagamento");
+      showError(
+        "Erro ao confirmar pagamento!",
+        "Não foi possível confirmar o pagamento"
+      );
     }
   };
 

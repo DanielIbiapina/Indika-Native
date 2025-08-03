@@ -64,7 +64,6 @@ const ImageUpload = ({ value, onChange, maxSize = 2, label, currentImage }) => {
   const handleRemove = () => {
     onChange(null);
   };
-
   return (
     <Container>
       {label && <Label>{label}</Label>}

@@ -39,35 +39,71 @@ const TodasComunidades = () => {
     user: null,
     isSearching: false,
   });
+  // ✅ NOVOS ESTADOS
+  const [page, setPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     loadCommunities();
   }, []);
 
-  const loadCommunities = async (refresh = false) => {
+  // ✅ FUNÇÃO MELHORADA
+  const loadCommunities = async (reset = true) => {
     try {
-      if (refresh) {
-        setRefreshing(true);
-      } else {
+      if (reset) {
         setLoading(true);
+        setPage(1);
+      } else {
+        setLoadingMore(true);
       }
 
       setError(null);
 
-      const allCommunities = await communityService.list();
+      const currentPage = reset ? 1 : page;
 
-      // Só comunidades públicas (ignorando privadas por enquanto)
+      // ✅ USAR MÉTODO MELHORADO
+      const allCommunities = isLoggedIn
+        ? await communityService.listWithUserContext({
+            page: currentPage,
+            limit: 30,
+          })
+        : await communityService.list({
+            page: currentPage,
+            limit: 30,
+            includeFriends: false,
+          });
+
+      // Só comunidades públicas
       const publicCommunities = allCommunities.filter(
         (comm) => !comm.isPrivate
       );
 
-      setCommunities(publicCommunities);
+      // ✅ VERIFICAR se há mais dados
+      const newHasMoreData = allCommunities.length === 30;
+      setHasMoreData(newHasMoreData);
+
+      if (reset) {
+        setCommunities(publicCommunities);
+      } else {
+        // ✅ ADICIONAR às comunidades existentes
+        setCommunities((prev) => [...prev, ...publicCommunities]);
+        setPage(currentPage + 1);
+      }
     } catch (err) {
       setError("Erro ao carregar comunidades");
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // ✅ NOVA FUNÇÃO: Carregar mais comunidades
+  const loadMoreCommunities = () => {
+    if (!loadingMore && hasMoreData) {
+      loadCommunities(false);
     }
   };
 
@@ -103,27 +139,38 @@ const TodasComunidades = () => {
     try {
       setSearchResults((prev) => ({ ...prev, isSearching: true }));
 
-      // Filtrar comunidades
-      const filteredCommunities = filterCommunities(communities, query);
+      // Buscar comunidades com contexto do usuário
+      const communitiesPromise = isLoggedIn
+        ? communityService.listWithUserContext({
+            page: 1,
+            limit: 50, // Mais resultados na busca
+          })
+        : communityService.list({
+            page: 1,
+            limit: 50,
+            includeFriends: false,
+          });
 
-      let foundUser = null;
+      // Buscar usuários se parece com telefone
+      const userPromise = isPhoneNumber(query)
+        ? userService.searchByPhone(query).catch(() => null)
+        : Promise.resolve(null);
 
-      // Se parecer um telefone, buscar usuário
-      if (isPhoneNumber(query)) {
-        try {
-          foundUser = await userService.searchByPhone(query);
-        } catch (error) {
-          console.log("Usuário não encontrado por telefone");
-        }
-      }
+      const [allCommunities, foundUser] = await Promise.all([
+        communitiesPromise,
+        userPromise,
+      ]);
+
+      // Filtrar comunidades localmente por nome/descrição
+      const filteredCommunities = filterCommunities(allCommunities, query);
 
       setSearchResults({
         communities: filteredCommunities,
         user: foundUser,
         isSearching: false,
       });
-    } catch (error) {
-      console.error("Erro na busca:", error);
+    } catch (err) {
+      console.error("Erro na busca:", err);
       setSearchResults((prev) => ({ ...prev, isSearching: false }));
     }
   };
@@ -145,7 +192,9 @@ const TodasComunidades = () => {
     navigation.navigate("PerfilVisitante", { userId: user.id });
   };
 
+  // ✅ FUNÇÃO MELHORADA: Refresh com reset
   const onRefresh = () => {
+    setRefreshing(true);
     loadCommunities(true);
   };
 
@@ -253,10 +302,18 @@ const TodasComunidades = () => {
           }}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#422680"]} // Android
+              tintColor="#422680" // iOS
+            />
           }
           ListHeaderComponent={renderUserResult}
           renderItem={renderCommunityItem}
+          // ✅ ADICIONAR: Infinite scroll
+          onEndReached={loadMoreCommunities}
+          onEndReachedThreshold={0.5}
         />
       ) : (
         renderEmptyState()

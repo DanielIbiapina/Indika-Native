@@ -5,6 +5,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Alert,
+  Linking,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "../../contexts/authContext";
@@ -17,6 +18,7 @@ import NameStep from "./steps/NameStep";
 import EmailStep from "./steps/EmailStep";
 import PasswordStep from "./steps/PasswordStep";
 import CpfStep from "./steps/CpfStep";
+import TermsStep from "./steps/TermStep";
 
 // Components
 import StepIndicator from "./components/StepIndicator";
@@ -32,7 +34,13 @@ const STEPS = [
     title: "Crie uma senha",
     required: true,
   },
-  { id: "cpf", component: CpfStep, title: "CPF (Opcional)", required: false },
+  //{ id: "cpf", component: CpfStep, title: "CPF (Opcional)", required: false },
+  {
+    id: "terms",
+    component: TermsStep,
+    title: "Termos e Privacidade",
+    required: true,
+  },
 ];
 
 const SignupFlow = () => {
@@ -47,7 +55,9 @@ const SignupFlow = () => {
     name: "",
     email: "",
     password: "",
-    cpf: "",
+    //cpf: "",
+    acceptedTerms: false,
+    acceptedAt: null,
   });
 
   const handleNextStep = (stepData) => {
@@ -72,12 +82,12 @@ const SignupFlow = () => {
   const handleSkipStep = () => {
     const step = STEPS[currentStep];
     if (!step.required) {
-      // Se é o último step (CPF), finaliza com CPF vazio
-      if (currentStep === STEPS.length - 1) {
-        const finalData = { ...formData, cpf: "" };
-        completeSignup(finalData);
+      // ✅ CORRIGIR: Agora só o email é opcional
+      if (step.id === "email") {
+        // Se é email, pula para o próximo step (password)
+        handleNextStep({ email: "" });
       } else {
-        // Se não é o último step, avança normalmente
+        // Se não é step obrigatório, avança normalmente
         handleNextStep({});
       }
     }
@@ -90,30 +100,40 @@ const SignupFlow = () => {
         name: finalData.name,
         email: finalData.email || "vazio",
         hasPassword: !!finalData.password,
-        cpf: finalData.cpf || "vazio",
+        // ❌ REMOVER: cpf: finalData.cpf || "vazio",
         phone: finalData.phoneNumber ? "***.***.***-**" : "não informado",
         hasToken: !!finalData.verifiedPhoneToken,
+        // ✅ ADICIONAR:
+        acceptedTerms: finalData.acceptedTerms,
+        acceptedAt: finalData.acceptedAt,
       });
 
-      // Preparar dados para envio - tratando campos opcionais
+      // ✅ CORRIGIR: Preparar dados para envio
       const registrationData = {
         name: finalData.name.trim(),
-        email: finalData.email?.trim() || null, // null ao invés de string vazia
+        email: finalData.email?.trim() || null,
         password: finalData.password,
-        cpf: finalData.cpf ? finalData.cpf.replace(/\D/g, "") : null, // null ao invés de string vazia
+        // ❌ REMOVER: cpf: finalData.cpf ? finalData.cpf.replace(/\D/g, "") : null,
         phone: finalData.phoneNumber.replace(/\D/g, ""),
         verifiedPhoneToken: finalData.verifiedPhoneToken,
+        // ✅ ADICIONAR dados dos termos:
+        acceptedTerms: finalData.acceptedTerms,
+        acceptedAt: finalData.acceptedAt,
       };
 
       console.log("Dados preparados para registro:", registrationData);
 
+      // ✅ ATUALIZAR chamada do register:
       const result = await register(
         registrationData.name,
         registrationData.email,
         registrationData.password,
-        registrationData.cpf,
+        // registrationData.cpf, ❌ REMOVER
         registrationData.phone,
-        registrationData.verifiedPhoneToken
+        registrationData.verifiedPhoneToken,
+        // ✅ ADICIONAR novos parâmetros:
+        registrationData.acceptedTerms,
+        registrationData.acceptedAt
       );
 
       if (result.success) {

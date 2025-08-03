@@ -33,9 +33,17 @@ export const reviewService = {
   },
 
   // Nova função para listar avaliações recebidas
-  listReceivedReviews: async (userId) => {
+  listReceivedReviews: async (userId, params = {}) => {
     try {
-      const response = await api.get(`/reviews/received-by/${userId}`);
+      const { page = 1, limit = 3 } = params;
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      const response = await api.get(
+        `/reviews/received-by/${userId}?${queryParams}`
+      );
       return response.data;
     } catch (error) {
       throw handleError(error, "Erro ao listar avaliações recebidas");

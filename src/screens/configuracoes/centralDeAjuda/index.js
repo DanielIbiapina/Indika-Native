@@ -36,7 +36,7 @@ const FAQ_DATA = [
     id: "2",
     question: "Como entrar em contato com o suporte?",
     answer:
-      "Você pode entrar em contato conosco através do e-mail suporte@indika.com.br ou pelo WhatsApp disponível nesta tela.",
+      "Você pode entrar em contato conosco através do e-mail appindika.tech@gmail.com ou pelo WhatsApp disponível nesta tela.",
   },
   {
     id: "3",
@@ -62,7 +62,7 @@ const CentralAjuda = () => {
   };
 
   const handleContactEmail = () => {
-    Linking.openURL("mailto:suporte@indika.com.br");
+    Linking.openURL("mailto:appindika.tech@gmail.com");
   };
 
   const handleOpenChat = () => {

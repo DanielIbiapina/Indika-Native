@@ -20,6 +20,7 @@ import {
 import ServiceCategoryCard from "../../components/serviceCategoryCard";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, ScrollView } from "react-native";
+import { useUserLocation } from "../../hooks/useUserLocation";
 
 const ServicesByCategory = () => {
   const route = useRoute();
@@ -37,12 +38,28 @@ const ServicesByCategory = () => {
   // ✅ NOVO: Obter subcategorias disponíveis da categoria
   const availableSubcategories = CATEGORIES[category]?.subcategories || [];
 
+  // ✅ NOVO: Hook de localização
+  const { userLocation } = useUserLocation();
+
   useEffect(() => {
     const fetchServices = async () => {
       try {
         setLoading(true);
-        // Buscar todos os serviços da categoria
-        const data = await serviceService.list({ category });
+
+        // ✅ SEGURO: Adicionar filtro apenas se tem localização
+        const params = { category };
+        if (userLocation?.city) {
+          params.userLocation = userLocation;
+          params.filterByLocation = true;
+          console.log(
+            "🔍 Filtrando serviços de",
+            category,
+            "por:",
+            userLocation.city
+          );
+        }
+
+        const data = await serviceService.list(params);
         setAllServices(data);
 
         // Aplicar filtros iniciais se houver
@@ -64,7 +81,7 @@ const ServicesByCategory = () => {
     };
 
     fetchServices();
-  }, [category, initialSubcategory]);
+  }, [category, initialSubcategory, userLocation]); // ✅ ADICIONAR userLocation
 
   // ✅ NOVO: Filtrar serviços baseado nas subcategorias selecionadas
   useEffect(() => {

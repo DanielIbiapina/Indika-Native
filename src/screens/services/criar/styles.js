@@ -71,10 +71,12 @@ export const CategorySelect = styled(Picker)`
   background-color: white;
 `;
 
-export const PriceInput = styled.View`
-  flex-direction: row;
-  gap: 12px;
-`;
+// ❌ REMOVIDO: export const PriceInput = styled.View`
+//   flex-direction: row;
+//   align-items: center;
+//   gap: 10px;
+//   margin-bottom: 16px;
+// `;
 
 export const ButtonStyled = styled.TouchableOpacity`
   width: 100%;

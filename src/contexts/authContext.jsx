@@ -92,18 +92,22 @@ export const AuthProvider = ({ children }) => {
     name,
     email,
     password,
-    cpf,
+    //cpf,
     phone,
-    verifiedPhoneToken
+    verifiedPhoneToken,
+    acceptedTerms,
+    acceptedAt
   ) => {
     try {
       console.log("Dados enviados para registro:", {
         name,
         email,
         password,
-        cpf,
+        //cpf,
         phone,
         verifiedPhoneToken,
+        acceptedTerms,
+        acceptedAt,
       });
 
       if (!verifiedPhoneToken && !__DEV__) {
@@ -114,9 +118,11 @@ export const AuthProvider = ({ children }) => {
         name,
         email,
         password,
-        cpf,
+        //cpf,
         phone,
         verifiedPhoneToken,
+        acceptedTerms,
+        acceptedAt,
       });
 
       console.log("Resposta completa do registro:", response.data);

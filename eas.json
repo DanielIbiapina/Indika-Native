@@ -3,16 +3,36 @@
     "preview": {
       "android": {
         "buildType": "apk"
-      }
-    },
-    "preview2": {
-      "android": {
-        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "distribution": "internal"
       }
     },
     "production": {
       "android": {
-        "buildType": "apk"
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "distribution": "store"
+      }
+    }
+  },
+  "submit": {
+    "preview": {
+      "ios": {
+        "appleId": "luizamiranda.e@gmail.com",
+        "ascAppId": "6749510734",
+        "appleTeamId": "CQH7ZTPRBW"
+      }
+    },
+    "production": {
+      "android": {
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "luizamiranda.e@gmail.com",
+        "ascAppId": "6749510734",
+        "appleTeamId": "CQH7ZTPRBW"
       }
     }
   }

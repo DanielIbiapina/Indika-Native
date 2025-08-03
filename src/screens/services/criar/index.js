@@ -27,11 +27,13 @@ import {
 } from "../../../constants/categories";
 import CategorySelectionModal from "../../../components/categorySelectionModal";
 import { MaterialIcons } from "@expo/vector-icons";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Text, View, Alert, Linking } from "react-native";
 import {
   emitServiceCreated,
   emitServiceUpdated,
 } from "../../../utils/eventEmitter";
+import * as Location from "expo-location";
+import ServiceAreaSelector from "../../../components/serviceAreaSelector";
 
 const CriarServico = () => {
   const navigation = useNavigation();
@@ -45,15 +47,28 @@ const CriarServico = () => {
   const [error, setError] = useState("");
   const [loadingService, setLoadingService] = useState(isEditing);
 
+  // ✅ ADICIONAR ao formData:
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
-    subcategories: [], // ✅ NOVO
-    priceStartingAt: "",
-    priceUnit: "servico",
+    subcategories: [],
     image: null,
+    // 🔥 NOVOS CAMPOS DE LOCALIZAÇÃO:
+    serviceArea: {
+      type: "city", // 'city', 'region', 'custom'
+      city: "",
+      state: "",
+      radius: 10, // km para áreas metropolitanas
+      customAreas: [], // bairros específicos
+    },
+    coverageDescription: "", // ex: "Atendo toda Grande São Paulo"
   });
+
+  // ✅ ADICIONAR: Hook para detectar localização atual
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   // ✅ NOVO: Carregar dados do serviço para edição
@@ -73,9 +88,16 @@ const CriarServico = () => {
         description: service.description,
         category: service.category,
         subcategories: service.subcategories || [], // ✅ NOVO
-        priceStartingAt: service.priceStartingAt.toString(),
-        priceUnit: service.priceUnit,
+        //priceStartingAt: service.priceStartingAt.toString(),
+        //priceUnit: service.priceUnit,
         image: service.images?.[0] ? { uri: service.images[0] } : null,
+        // 🔥 PREENCHER campos de localização
+        serviceArea: {
+          city: service.serviceCity || "",
+          state: service.serviceState || "",
+          type: "city",
+        },
+        coverageDescription: service.coverageDescription || "",
       });
     } catch (err) {
       console.error("Erro ao carregar serviço:", err);
@@ -109,59 +131,84 @@ const CriarServico = () => {
   };
 
   const handleSubmit = async () => {
-    setLoading(true);
-    setError("");
-
     try {
-      const formDataToSend = new FormData();
+      setLoading(true);
+      setError("");
 
-      // ✅ NOVO: Se não tem imagem própria, usar a padrão da categoria
-      if (formData.image?.uri) {
+      // Validações existentes
+      if (!formData.title.trim()) {
+        setError("Título é obrigatório");
+        return;
+      }
+
+      if (!formData.description.trim()) {
+        setError("Descrição é obrigatória");
+        return;
+      }
+
+      if (!formData.category) {
+        setError("Categoria é obrigatória");
+        return;
+      }
+
+      // ✅ NOVA: Validação de localização
+      if (!formData.serviceArea.city) {
+        setError("Defina sua área de atuação");
+        return;
+      }
+
+      console.log("Dados do serviço a serem enviados:", formData);
+
+      const submitData = new FormData();
+      submitData.append("title", formData.title);
+      submitData.append("description", formData.description);
+      submitData.append("category", formData.category);
+      submitData.append(
+        "subcategories",
+        JSON.stringify(formData.subcategories)
+      );
+
+      // ✅ NOVO: Adicionar localização
+      submitData.append("serviceCity", formData.serviceArea.city);
+      submitData.append("serviceState", formData.serviceArea.state);
+
+      // ✅ CORRIGIR: Restaurar funcionalidade completa de imagem
+      if (formData.image && formData.image.uri) {
         // Tem imagem própria
-        formDataToSend.append("image", {
-          uri: formData.image.uri,
-          type: formData.image.type || "image/jpeg",
-          name: formData.image.fileName || "service-image.jpg",
+        const imageUri = formData.image.uri;
+        const filename = imageUri.split("/").pop();
+        const fileType = filename.split(".").pop();
+
+        submitData.append("image", {
+          uri: imageUri,
+          name: filename,
+          type: `image/${fileType}`,
         });
       } else {
-        // ✅ SEM IMAGEM: Usar padrão da categoria (sempre)
+        // ✅ RESTAURADO: SEM IMAGEM - Usar padrão da categoria
         if (formData.category && DEFAULT_CATEGORY_IMAGES[formData.category]) {
-          console.log(`��️ Usando imagem padrão para: ${formData.category}`);
-          formDataToSend.append(
+          console.log(`🖼️ Usando imagem padrão para: ${formData.category}`);
+          submitData.append(
             "defaultImage",
             DEFAULT_CATEGORY_IMAGES[formData.category]
           );
         }
       }
 
-      // Adiciona os outros dados do serviço
-      formDataToSend.append("title", formData.title);
-      formDataToSend.append("description", formData.description);
-      formDataToSend.append("category", formData.category);
-      formDataToSend.append(
-        "subcategories",
-        JSON.stringify(formData.subcategories)
-      ); // ✅ NOVO
-      formDataToSend.append("priceStartingAt", formData.priceStartingAt);
-      formDataToSend.append("priceUnit", formData.priceUnit);
+      const result = await serviceService.create(submitData, serviceId);
 
-      // ✅ UPSERT: Um método só para ambos os casos
-      const response = await serviceService.create(formDataToSend, serviceId);
-
-      // 🎯 EMITIR EVENTO: Notificar outras telas
       if (isEditing) {
-        emitServiceUpdated(response);
+        emitServiceUpdated(result);
       } else {
-        emitServiceCreated(response);
+        emitServiceCreated(result);
       }
 
-      // Navegar para detalhes
-      navigation.replace("ServicoDetalhes", { id: response.id || serviceId });
+      Alert.alert("Sucesso!", "Serviço salvo com sucesso!", [
+        { text: "OK", onPress: () => navigation.goBack() },
+      ]);
     } catch (err) {
-      console.error(`Erro ao ${isEditing ? "atualizar" : "criar"}:`, err);
-      setError(
-        err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} serviço`
-      );
+      console.error("Erro ao salvar serviço:", err);
+      setError(err.message || "Erro ao salvar serviço");
     } finally {
       setLoading(false);
     }
@@ -223,6 +270,19 @@ const CriarServico = () => {
             required
           />
 
+          {/* ✅ NOVO: Área de atuação */}
+          <ServiceAreaSelector
+            serviceArea={formData.serviceArea}
+            onAreaChange={(newArea) => {
+              console.log("Nova área selecionada:", newArea);
+              setFormData((prev) => ({
+                ...prev,
+                serviceArea: newArea,
+              }));
+            }}
+            userLocation={userLocation}
+          />
+
           {/* ✅ MODIFICADO: Mostrar categoria + subcategorias */}
           <CategoryButton onPress={() => setShowCategoryModal(true)}>
             <View style={{ flex: 1 }}>
@@ -251,7 +311,7 @@ const CriarServico = () => {
             </CategoryButtonIcon>
           </CategoryButton>
 
-          <PriceInput>
+          {/*<PriceInput>
             <Input
               placeholder="Preço inicial"
               value={formData.priceStartingAt}
@@ -268,7 +328,7 @@ const CriarServico = () => {
               <Picker.Item label="por hora" value="hora" />
               <Picker.Item label="por pessoa" value="pessoa" />
             </Picker>
-          </PriceInput>
+          </PriceInput>*/}
 
           {error && <ErrorMessage>{error}</ErrorMessage>}
 

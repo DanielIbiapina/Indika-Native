@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -32,11 +32,16 @@ import {
   SectionTitleText,
   ViewAllText,
   ServiceList,
+  LocationIndicator,
+  LocationText,
 } from "./styles";
 import { useTutorial } from "../../contexts/tutorialContext";
 import { CATEGORIES, CATEGORY_ICONS } from "../../constants/categories";
 import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
 import { useBadge } from "../../contexts/badgeContext";
+import ExploradorCategorias from "../../components/exploradorCategorias";
+import { useUserLocation } from "../../hooks/useUserLocation";
+import LocationSelectorModal from "../../components/locationSelectorModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -56,15 +61,134 @@ const Home = () => {
 
   // Tutorial state
   const [tutorialStep, setTutorialStep] = useState(0);
+
+  // ✅ CORRIGIDO: Mover para o topo com os outros useState
+  const [showExplorador, setShowExplorador] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+
+  // ✅ NOVO: Estado para localização manual (sobrepõe GPS)
+  const [manualLocation, setManualLocation] = useState(null);
+
   const { startTutorial, endTutorial, shouldShowTutorial, resetTutorials } =
     useTutorial();
 
   const { testIncrement } = useBadge();
 
-  // ✅ NOVO: Função de busca
+  // ✅ Hook de localização GPS melhorado
+  const {
+    userLocation,
+    loading: locationLoading,
+    detectLocation,
+    requestPermission,
+  } = useUserLocation();
+
+  // ✅ CORREÇÃO 1: Estabilizar effectiveLocation com useMemo
+  const effectiveLocation = useMemo(() => {
+    return (
+      manualLocation ||
+      userLocation || {
+        city: "São Carlos",
+        state: "SP",
+      }
+    );
+  }, [manualLocation, userLocation]);
+
+  // ✅ CORREÇÃO 2: Estabilizar isDefaultLocation
+  const isDefaultLocation = useMemo(() => {
+    return !manualLocation && !userLocation;
+  }, [manualLocation, userLocation]);
+
+  // ✅ CORREÇÃO 3: Memoizar fetchData para evitar recriações
+  const fetchData = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const params = { limit: 100 };
+      if (effectiveLocation?.city) {
+        params.userLocation = effectiveLocation;
+        params.filterByLocation = true;
+        console.log("🔍 Filtrando serviços por:", effectiveLocation.city);
+      } else {
+        console.log(
+          "🔍 Mostrando todos os serviços (sem filtro de localização)"
+        );
+      }
+
+      const servicesData = await serviceService.list(params);
+      processServicesData(servicesData);
+      setAllServices(servicesData);
+    } catch (error) {
+      console.error("Erro ao carregar dados:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [effectiveLocation]); // ✅ Dependência controlada
+
+  // ✅ CORREÇÃO 4: useEffect com controle de execução
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+
+  useEffect(() => {
+    if (!hasInitialLoad) {
+      // Primeira carga
+      fetchData();
+      setHasInitialLoad(true);
+    }
+  }, []); // ✅ Só executa uma vez no mount
+
+  // ✅ CORREÇÃO 5: useEffect separado para mudanças de localização
+  useEffect(() => {
+    if (hasInitialLoad && effectiveLocation) {
+      console.log("📍 Localização atualizada, recarregando serviços...");
+      fetchData();
+    }
+  }, [effectiveLocation, hasInitialLoad, fetchData]);
+
+  // ✅ CORREÇÃO 6: Remover o useEffect original das linhas 279-281
+  // useEffect(() => {
+  //   fetchData();
+  // }, []); ❌ REMOVER
+
+  // ✅ CORREÇÃO 7: Remover o useEffect problemático das linhas 294-299
+  // useEffect(() => {
+  //   if (effectiveLocation) {
+  //     console.log("📍 Localização atualizada, recarregando serviços...");
+  //     fetchData();
+  //   }
+  // }, [effectiveLocation]); ❌ REMOVER
+
+  // ✅ CORREÇÃO 8: Atualizar handleTryDetectLocation
+  const handleTryDetectLocation = useCallback(async () => {
+    const location = await requestPermission();
+    // Não precisa chamar fetchData aqui - o useEffect vai detectar a mudança
+  }, [requestPermission]);
+
+  // ✅ NOVO: Função para detectar subcategorias na busca
+  const findSubcategoryMatch = (query) => {
+    const normalizedQuery = query.toLowerCase().trim();
+
+    // Procurar em todas as categorias por subcategorias que fazem match
+    for (const [categoryName, categoryData] of Object.entries(CATEGORIES)) {
+      const subcategories = categoryData.subcategories || [];
+
+      // Verificar se a busca corresponde exatamente a uma subcategoria
+      const matchingSubcategory = subcategories.find(
+        (sub) => sub.toLowerCase() === normalizedQuery
+      );
+
+      if (matchingSubcategory) {
+        return {
+          category: categoryName,
+          subcategory: matchingSubcategory,
+        };
+      }
+    }
+
+    return null;
+  };
+
+  // ✅ MODIFICADO: Função de busca incluindo subcategorias
   const performSearch = (query) => {
     if (!query.trim()) {
-      // Se não há busca, mostrar tudo
       setFilteredServices(services);
       setFilteredCategories(categories);
       return;
@@ -72,13 +196,18 @@ const Home = () => {
 
     const normalizedQuery = query.toLowerCase().trim();
 
-    // Filtrar serviços
+    // Filtrar serviços incluindo subcategorias
     const filtered = allServices.filter(
       (service) =>
         service.title.toLowerCase().includes(normalizedQuery) ||
         service.description.toLowerCase().includes(normalizedQuery) ||
         service.category.toLowerCase().includes(normalizedQuery) ||
-        service.provider.name.toLowerCase().includes(normalizedQuery)
+        service.provider.name.toLowerCase().includes(normalizedQuery) ||
+        // ✅ NOVO: Buscar também nas subcategorias
+        (service.subcategories &&
+          service.subcategories.some((sub) =>
+            sub.toLowerCase().includes(normalizedQuery)
+          ))
     );
 
     // Agrupar serviços filtrados por categoria
@@ -105,28 +234,59 @@ const Home = () => {
     performSearch(text);
   };
 
-  // ✅ NOVO: Função para navegar para resultados completos
+  // ✅ MODIFICADO: Função para navegar com detecção de subcategoria
   const handleSearchSubmit = () => {
-    if (searchQuery.trim()) {
-      navigation.navigate("ResultadosBusca", {
-        query: searchQuery,
-        services: filteredServices,
+    if (!searchQuery.trim()) return;
+
+    // Verificar se é uma subcategoria específica
+    const subcategoryMatch = findSubcategoryMatch(searchQuery);
+
+    if (subcategoryMatch) {
+      // É uma subcategoria - navegar diretamente para a categoria filtrada
+      navigation.navigate("ServicosPorCategoria", {
+        category: subcategoryMatch.category,
+        initialSubcategory: subcategoryMatch.subcategory,
       });
+    } else {
+      // ✅ CORRIGIDO: Busca geral - não navegar, apenas manter na home
+      // A home já mostra os resultados filtrados
+      console.log("Busca geral mantida na home");
     }
   };
 
-  const fetchData = async () => {
-    setRefreshing(true);
-    try {
-      const servicesData = await serviceService.list({ limit: 100 });
-      processServicesData(servicesData);
-      setAllServices(servicesData); // ✅ NOVO: Guardar lista completa
-    } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+  // ✅ NOVO: Função para melhorar a exibição dos resultados
+  const renderSearchResults = () => {
+    if (!searchQuery.trim()) return null;
+
+    const subcategoryMatch = findSubcategoryMatch(searchQuery);
+    const totalResults = Object.values(filteredServices).reduce(
+      (total, services) => total + services.length,
+      0
+    );
+
+    return (
+      <SectionTitle style={{ marginTop: 16 }}>
+        <SectionTitleText>
+          {subcategoryMatch ? (
+            <>
+              <Text style={{ fontWeight: "bold" }}>
+                {subcategoryMatch.subcategory}
+              </Text>{" "}
+              em {subcategoryMatch.category}
+            </>
+          ) : (
+            `${totalResults} resultado(s) para "${searchQuery}"`
+          )}
+        </SectionTitleText>
+        {totalResults > 0 && (
+          <TouchableOpacity onPress={handleSearchSubmit}>
+            <ViewAllText>
+              {subcategoryMatch ? "Ver todos" : "Ver todos"}
+            </ViewAllText>
+          </TouchableOpacity>
+        )}
+      </SectionTitle>
+    );
   };
 
   const processServicesData = (servicesData) => {
@@ -152,10 +312,6 @@ const Home = () => {
     setFilteredServices(servicesByCategory); // ✅ NOVO: Inicializar filtrados
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   // Iniciar tutorial quando a tela for montada (em produção, só mostrará para novos usuários)
   useEffect(() => {
     if (signed) {
@@ -165,6 +321,14 @@ const Home = () => {
       }, 1000);
     }
   }, [signed]);
+
+  // ✅ CORRIGIDO: Re-executar quando localização efetiva mudar
+  // useEffect(() => {
+  //   if (effectiveLocation) {
+  //     console.log("📍 Localização atualizada, recarregando serviços...");
+  //     fetchData();
+  //   }
+  // }, [effectiveLocation]); ❌ REMOVER
 
   // Tutorial content
   const tutorialContent = [
@@ -213,29 +377,6 @@ const Home = () => {
     setTimeout(() => {
       startTutorial("home");
     }, 500);
-  };
-
-  // ✅ MOVIDO: Função renderSearchResults ANTES do if (loading)
-  const renderSearchResults = () => {
-    if (!searchQuery.trim()) return null;
-
-    const totalResults = Object.values(filteredServices).reduce(
-      (total, services) => total + services.length,
-      0
-    );
-
-    return (
-      <SectionTitle style={{ marginTop: 16 }}>
-        <SectionTitleText>
-          {totalResults} resultado(s) para "{searchQuery}"
-        </SectionTitleText>
-        {totalResults > 0 && (
-          <TouchableOpacity onPress={handleSearchSubmit}>
-            <ViewAllText>Ver todos</ViewAllText>
-          </TouchableOpacity>
-        )}
-      </SectionTitle>
-    );
   };
 
   // Renderizar o tutorial
@@ -503,6 +644,7 @@ const Home = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={fetchData} />
         }
+        keyboardShouldPersistTaps="handled" // ✅ ADICIONAR ESTA LINHA
       >
         <Container>
           {/*!signed && (
@@ -520,11 +662,112 @@ const Home = () => {
             Boas-vindas{user ? `, ${user.name}` : ""}
           </Title>
 
+          {/* ✅ CORRIGIDO: LocationIndicator sempre visível */}
+          <TouchableOpacity
+            onPress={() => setShowLocationModal(true)}
+            style={{ marginHorizontal: 0, marginBottom: 0, width: "100%" }}
+          >
+            <LocationIndicator>
+              <Ionicons
+                name={isDefaultLocation ? "location-outline" : "location"}
+                size={16}
+                color={isDefaultLocation ? "#999" : "#422680"}
+              />
+              <LocationText
+                style={{ color: isDefaultLocation ? "#999" : "#333" }}
+              >
+                {isDefaultLocation
+                  ? `Escolha sua cidade (padrão: ${effectiveLocation.city}, ${effectiveLocation.state})`
+                  : `Serviços em ${effectiveLocation.city}, ${effectiveLocation.state}`}
+              </LocationText>
+              <Ionicons name="chevron-down" size={16} color="#422680" />
+            </LocationIndicator>
+          </TouchableOpacity>
+
+          {/* ✅ MELHORADO: Aviso com botão para detectar localização */}
+          {isDefaultLocation && (
+            <View
+              style={{
+                backgroundColor: "#fff3cd",
+                padding: 12,
+                marginHorizontal: 16,
+                marginBottom: 16,
+                borderRadius: 8,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Ionicons name="information-circle" size={20} color="#856404" />
+                <Text
+                  style={{
+                    flex: 1,
+                    marginLeft: 8,
+                    color: "#856404",
+                    fontSize: 14,
+                  }}
+                >
+                  Não foi possível detectar sua localização automaticamente.
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  onPress={handleTryDetectLocation}
+                  style={{
+                    backgroundColor: "#422680",
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                  disabled={locationLoading}
+                >
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="locate" size={16} color="#fff" />
+                  )}
+                  <Text style={{ color: "#fff", fontSize: 14, marginLeft: 4 }}>
+                    {locationLoading ? "Detectando..." : "Detectar"}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setShowLocationModal(true)}
+                  style={{
+                    backgroundColor: "transparent",
+                    borderWidth: 1,
+                    borderColor: "#856404",
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Ionicons name="list" size={16} color="#856404" />
+                  <Text
+                    style={{ color: "#856404", fontSize: 14, marginLeft: 4 }}
+                  >
+                    Escolher
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
           <SearchBar
             placeholder="O que você precisa?"
             value={searchQuery}
             onChangeText={handleSearch}
             onSubmit={handleSearchSubmit}
+            enableSuggestions={true}
           />
 
           {/* ✅ CORRIGIDO: Agora a função está definida antes */}
@@ -537,6 +780,27 @@ const Home = () => {
             renderItem={renderCategoryItem}
             showsHorizontalScrollIndicator={false}
           />
+
+          {/* ✅ NOVO: Só mostrar quando não há busca */}
+          {!searchQuery.trim() && (
+            <TouchableOpacity
+              onPress={() => setShowExplorador(true)}
+              style={{
+                backgroundColor: "#422680",
+                padding: 12,
+                borderRadius: 8,
+                marginVertical: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="grid-outline" size={20} color="#fff" />
+              <Text style={{ color: "#fff", marginLeft: 8, fontWeight: "600" }}>
+                Explorar todas as especialidades
+              </Text>
+            </TouchableOpacity>
+          )}
 
           {Object.entries(filteredServices).map(renderServiceSection)}
 
@@ -609,6 +873,22 @@ const Home = () => {
       </ScrollView>
 
       {renderTutorial()}
+      <ExploradorCategorias
+        visible={showExplorador}
+        onClose={() => setShowExplorador(false)}
+      />
+
+      {/* ✅ CORRIGIDO: Modal de seleção de localização */}
+      <LocationSelectorModal
+        visible={showLocationModal}
+        currentLocation={effectiveLocation}
+        onLocationChange={(location) => {
+          setManualLocation(location);
+          setShowLocationModal(false);
+          // Não precisa chamar fetchData aqui - o useEffect vai detectar
+        }}
+        onClose={() => setShowLocationModal(false)}
+      />
     </>
   );
 };

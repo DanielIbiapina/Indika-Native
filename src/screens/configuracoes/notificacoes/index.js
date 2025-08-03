@@ -18,6 +18,7 @@ import {
   TestButton,
   TestButtonText,
 } from "./styles";
+import { useToast } from "../../../hooks/useToast";
 
 const Notificacoes = () => {
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ const Notificacoes = () => {
     marketing: false,
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadPreferences();
@@ -116,10 +118,10 @@ const Notificacoes = () => {
     try {
       setSaving(true);
       await userService.updateNotificationPreferences(preferences);
-      Alert.alert("Sucesso", "Preferências atualizadas com sucesso!");
+      showSuccess("Configurado!", "Preferências atualizadas com sucesso");
       setHasChanges(false);
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível atualizar suas preferências");
+      showError("Erro!", "Não foi possível atualizar suas preferências");
     } finally {
       setSaving(false);
     }

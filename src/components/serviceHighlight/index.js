@@ -18,7 +18,7 @@ const ServiceHighlight = ({
   image,
   provider,
   stats = { averageRating: 0, totalReviews: 0 },
-  price,
+  // price, // ❌ REMOVIDO
   description,
   onPress,
   testID,
@@ -53,7 +53,7 @@ const ServiceHighlight = ({
             avaliações)
           </RatingText>
         </Rating>
-        <Price>{price}</Price>
+        {/* ❌ REMOVIDO: <Price>{price}</Price> */}
         <Description numberOfLines={1}>{description}</Description>
       </ServiceInfo>
     </Card>

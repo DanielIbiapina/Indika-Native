@@ -141,3 +141,119 @@ export const SkipButtonText = styled.Text`
   font-size: 14px;
   font-weight: 500;
 `;
+
+export const TermsContainer = styled.View`
+  margin: 32px 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+`;
+
+export const TermsText = styled.Text`
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 20px;
+`;
+
+export const CheckboxContainer = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+export const CheckboxButton = styled.TouchableOpacity`
+  width: 24px;
+  height: 24px;
+  border: 2px solid #422680;
+  border-radius: 4px;
+  margin-right: 12px;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const CheckboxText = styled.Text`
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+  line-height: 20px;
+`;
+
+export const LinkText = styled.Text`
+  color: #422680;
+  font-weight: 600;
+  text-decoration-line: underline;
+`;
+
+export const ViewFullTermsButton = styled.TouchableOpacity`
+  padding: 0px;
+  align-items: center;
+  margin-top: 16px;
+`;
+
+export const ViewFullTermsText = styled.Text`
+  color: ${(props) => props.theme.colors.primary};
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration-line: underline;
+`;
+
+export const LastUpdateInfo = styled.Text`
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 24px;
+  font-style: italic;
+  text-align: center;
+`;
+
+export const CompanyInfo = styled.View`
+  background-color: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid #422680;
+`;
+
+export const CompanyText = styled.Text`
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+  line-height: 18px;
+`;
+
+export const Section = styled.View`
+  background-color: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  elevation: 2;
+`;
+
+export const SectionTitle = styled.Text`
+  font-size: 18px;
+  font-weight: 600;
+  color: #422680;
+  margin-bottom: 12px;
+`;
+
+export const Text = styled.Text`
+  font-size: 14px;
+  color: #333;
+  line-height: 20px;
+  margin-bottom: 12px;
+`;
+
+export const BulletPoint = styled.View`
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-left: 8px;
+`;
+
+export const BulletText = styled.Text`
+  font-size: 14px;
+  color: #333;
+  margin-left: 8px;
+  flex: 1;
+`;

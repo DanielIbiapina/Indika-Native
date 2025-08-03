@@ -79,3 +79,21 @@ export const ViewAllText = styled.Text`
 export const ServiceList = styled.FlatList`
   padding-vertical: 8px;
 `;
+
+export const LocationIndicator = styled.View`
+  flex-direction: row;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  margin: 0 0px 16px 0px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+`;
+
+export const LocationText = styled.Text`
+  flex: 1;
+  margin-left: 8px;
+  font-size: 14px;
+  color: #422680;
+  font-weight: 500;
+`;

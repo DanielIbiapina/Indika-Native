@@ -1,5 +1,7 @@
 import styled from "styled-components/native";
 import { ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 export const Container = styled.View`
   flex: 1;
@@ -15,7 +17,7 @@ export const ProfileHeader = styled.View`
   padding-top: 32px;
 `;
 
-export const AvatarContainer = styled.View`
+export const AvatarContainer = styled.TouchableOpacity`
   width: 100px;
   height: 100px;
   border-radius: 50px;
@@ -23,6 +25,51 @@ export const AvatarContainer = styled.View`
   background-color: #f5f5f5;
   justify-content: center;
   align-items: center;
+`;
+
+export const AvatarImage = styled.Image`
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+`;
+
+export const DefaultAvatarContainer = styled(LinearGradient).attrs({
+  colors: ["#422680", "#6B46C1"],
+  start: { x: 0, y: 0 },
+  end: { x: 1, y: 1 },
+})`
+  width: 100px;
+  height: 100px;
+  border-radius: 50px;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+`;
+
+export const DefaultAvatarIcon = styled(Ionicons)`
+  color: #fff;
+  opacity: 0.8;
+`;
+
+export const AvatarEditOverlay = styled.View`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: ${(props) => props.theme.colors.primary};
+  border-radius: 12px;
+  width: 24px;
+  height: 24px;
+  justify-content: center;
+  align-items: center;
+  elevation: 2;
+  shadow-color: #000;
+  shadow-offset: 0px 1px;
+  shadow-opacity: 0.2;
+  shadow-radius: 2px;
+`;
+
+export const EditIcon = styled(Ionicons)`
+  color: #fff;
 `;
 
 export const UserInfo = styled.View`

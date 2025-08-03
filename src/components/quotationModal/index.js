@@ -30,7 +30,13 @@ import {
   ButtonText,
 } from "./styles";
 
-const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
+const QuotationModal = ({
+  isVisible,
+  onClose,
+  onConfirm,
+  initialData,
+  loading: externalLoading,
+}) => {
   const [price, setPrice] = useState("");
   const [date, setDate] = useState(new Date());
   const [useSpecificTime, setUseSpecificTime] = useState(false);
@@ -40,6 +46,8 @@ const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (isVisible && initialData) {
@@ -56,22 +64,28 @@ const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
     }
   }, [isVisible, initialData]);
 
-  const handleSend = () => {
-    if (!price || parseFloat(price) <= 0) {
-      Alert.alert("Erro", "Informe um preço válido");
-      return;
+  const handleSend = async () => {
+    try {
+      setSending(true);
+
+      if (!price || parseFloat(price) <= 0) {
+        Alert.alert("Erro", "Informe um preço válido");
+        return;
+      }
+
+      const data = {
+        price: parseFloat(price),
+        scheduledDate: date.toISOString(),
+        specificTime: useSpecificTime,
+        scheduledTime: useSpecificTime ? time.toISOString() : null,
+        period: useSpecificTime ? null : period,
+        description: notes,
+      };
+
+      onConfirm(data);
+    } finally {
+      setSending(false);
     }
-
-    const data = {
-      price: parseFloat(price),
-      scheduledDate: date.toISOString(),
-      specificTime: useSpecificTime,
-      scheduledTime: useSpecificTime ? time.toISOString() : null,
-      period: useSpecificTime ? null : period,
-      description: notes,
-    };
-
-    onConfirm(data);
   };
 
   return (
@@ -167,8 +181,15 @@ const QuotationModal = ({ isVisible, onClose, onConfirm, initialData }) => {
             <CancelButton onPress={onClose}>
               <ButtonText secondary>Cancelar</ButtonText>
             </CancelButton>
-            <SendButton onPress={handleSend}>
-              <ButtonText>Enviar</ButtonText>
+            <SendButton
+              onPress={handleSend}
+              disabled={sending || externalLoading}
+            >
+              <ButtonText>
+                {sending || externalLoading
+                  ? "Enviando..."
+                  : "Enviar Orçamento"}
+              </ButtonText>
             </SendButton>
           </Actions>
 

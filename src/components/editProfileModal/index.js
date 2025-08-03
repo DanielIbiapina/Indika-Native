@@ -21,7 +21,7 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
   const [formData, setFormData] = useState({
     name: profile?.name || "",
     email: profile?.email || "",
-    avatar: null,
+    avatar: profile?.avatar ? { uri: profile.avatar } : null, // ✅ INICIALIZAR COM AVATAR ATUAL
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,8 +45,12 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
 
       const updatedProfile = { ...profile };
 
-      // Atualiza avatar se houver uma nova imagem
-      if (formData.avatar?.uri) {
+      // ✅ CORREÇÃO: Processar avatar mesmo quando é null (removido)
+      if (formData.avatar === null) {
+        // Se o usuário removeu a imagem, vamos limpar o avatar
+        updatedProfile.avatar = null;
+      } else if (formData.avatar?.uri) {
+        // Usuário adicionou nova imagem
         const avatarFormData = new FormData();
         avatarFormData.append("avatar", {
           uri: formData.avatar.uri,
@@ -103,12 +107,11 @@ const EditProfileModal = ({ profile, onUpdate, onClose }) => {
             <Form>
               <ImageUpload
                 value={formData.avatar}
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, avatar: value }))
-                }
+                onChange={(value) => {
+                  setFormData((prev) => ({ ...prev, avatar: value }));
+                }}
                 maxSize={2}
                 label="Foto de perfil"
-                currentImage={profile.avatar}
                 testID="avatar-upload"
               />
 

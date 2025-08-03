@@ -13,7 +13,11 @@ export const OrderProvider = ({ children }) => {
   const loadOrders = async (params = {}) => {
     try {
       setLoading(true);
-      const orders = await orderService.list(params);
+      const response = await orderService.list(params);
+
+      // ✅ CORREÇÃO: Extrair orders do response
+      const orders = response.orders || response;
+
       setOrderList(orders);
       return orders;
     } catch (error) {

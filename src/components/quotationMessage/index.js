@@ -28,6 +28,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useOrder } from "../../contexts/orderContext";
 import { paymentService } from "../../services/paymentService";
 import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
+import { useToast } from "../../hooks/useToast";
+import { orderService } from "../../services/orderService";
 
 const getStatusIcon = (status) => {
   switch (status) {
@@ -47,75 +49,68 @@ const getStatusIcon = (status) => {
 const QuotationMessage = ({
   message,
   isProvider,
-  setIsProvider,
-  onAccept,
-  onReject,
   orderId,
   userId,
   isOwn,
-  orderData,
+  orderData, // ✅ Usar este que já vem atualizado
   onRefresh,
+  onAccept, // ✅ ADICIONAR esta prop
 }) => {
   const navigation = useNavigation();
-  const { activeOrder, getOrderDetails } = useOrder();
   const [loading, setLoading] = useState(false);
+  const { showSuccess, showError } = useToast();
 
   const quotationData =
     typeof message.content === "string"
       ? JSON.parse(message.content)
       : message.content;
 
-  // Usar orderData se disponível, senão usar activeOrder
-  const currentOrder = orderData || activeOrder;
+  // ✅ SIMPLES: Usar orderData diretamente
+  const currentOrder = orderData;
 
-  useEffect(() => {
-    if (orderId && !activeOrder) {
-      getOrderDetails(orderId);
-    }
-    setIsProvider(activeOrder?.providerId === userId);
-  }, [orderId]);
-
-  // Mostrar botão de enviar orçamento se:
-  // - É uma solicitação inicial E
-  // - É o prestador E
-  // - O pedido está aguardando orçamento OU foi rejeitado
+  // Lógica dos botões (manter como está)
   const shouldShowQuoteButton =
     quotationData.messageType === MESSAGE_TYPES.REQUEST &&
     isProvider &&
-    (activeOrder?.status === ORDER_STATUS.WAITING_QUOTE ||
-      activeOrder?.status === ORDER_STATUS.QUOTE_REJECTED);
+    currentOrder &&
+    (currentOrder.status === ORDER_STATUS.WAITING_QUOTE ||
+      currentOrder.status === ORDER_STATUS.QUOTE_REJECTED);
 
-  // Mostrar botões de aceitar/rejeitar se:
-  // - É uma mensagem de orçamento E
-  // - É o cliente E
-  // - O orçamento está enviado (não foi aceito/rejeitado ainda)
   const shouldShowActionButtons =
     quotationData.messageType === MESSAGE_TYPES.QUOTE &&
     !isProvider &&
-    activeOrder?.status === ORDER_STATUS.QUOTE_SENT;
+    currentOrder &&
+    currentOrder.status === ORDER_STATUS.QUOTE_SENT;
 
-  const handlePayment = async () => {
+  // Função original - apenas adicionar refresh no final
+  const handleConfirmPayment = async () => {
     try {
       setLoading(true);
 
-      const orderData =
-        activeOrder || (await getOrderDetails(quotationData.orderId));
+      const allPayments = await paymentService.getPaymentHistory();
+      const orderPayment = allPayments.find(
+        (payment) => payment.orderId === quotationData.orderId
+      );
 
-      if (!orderData) {
-        throw new Error("Não foi possível obter os dados do pedido");
+      if (!orderPayment) {
+        showError(
+          "Pagamento não encontrado! ❌",
+          "Nenhum pagamento localizado"
+        );
+        return;
       }
 
-      // Ir diretamente para a tela de confirmação de pagamento
-      navigation.navigate("ConfirmarPagamento", {
-        orderId: quotationData.orderId,
-        amount: quotationData.price,
-        serviceTitle: quotationData.serviceName,
-        providerId: orderData.providerId,
-      });
+      await paymentService.confirmDirectPayment(orderPayment.id);
+      showSuccess("Pagamento confirmado! 💰", "Recebimento foi confirmado");
+
+      // ✅ ÚNICA MUDANÇA: Atualizar dados
+      if (onRefresh) {
+        await onRefresh();
+      }
     } catch (error) {
-      Alert.alert(
-        "Erro",
-        error.message || "Não foi possível iniciar o pagamento"
+      showError(
+        "Erro no pagamento! ❌",
+        "Não foi possível confirmar o recebimento"
       );
     } finally {
       setLoading(false);
@@ -134,47 +129,97 @@ const QuotationMessage = ({
     }
   };
 
-  // ADICIONAR: função para confirmar recebimento
-  const handleConfirmPayment = async () => {
+  // ✅ CORREÇÃO: Aceitar orçamento com refresh
+  const handleAcceptQuotation = async () => {
     try {
       setLoading(true);
-      console.log("=== CONFIRMAR PAGAMENTO NO CHAT ===");
+      await orderService.acceptQuotation(quotationData.orderId);
 
-      // ✅ NOVO: Usar a mesma lógica que funciona no pedidoDetalhes
-      const allPayments = await paymentService.getPaymentHistory();
-      console.log("Todos os pagamentos:", allPayments);
+      emitOrderStatusUpdated(currentOrder);
 
-      // Encontrar o pagamento deste pedido
-      const orderIdToUse = quotationData.orderId || orderId;
-      const orderPayment = allPayments.find(
-        (payment) => payment.orderId === orderIdToUse
-      );
-
-      if (!orderPayment) {
-        Alert.alert("Erro", "Nenhum pagamento encontrado para este pedido");
-        return;
-      }
-
-      console.log("Payment encontrado:", orderPayment);
-
-      // Confirmar recebimento
-      await paymentService.confirmDirectPayment(orderPayment.id);
-      Alert.alert("Sucesso", "Pagamento confirmado com sucesso!");
-
-      // ✅ NOVO: Atualizar dados como no pedidoDetalhes
+      // ✅ IMPORTANTE: Atualizar dados imediatamente
       if (onRefresh) {
         await onRefresh();
       }
 
-      // ✅ NOVO: Emitir evento para atualizar outras telas
-      if (currentOrder) {
-        emitOrderStatusUpdated(currentOrder);
+      showSuccess("Orçamento aceito!", "Proposta foi aprovada com sucesso");
+    } catch (error) {
+      showError("Erro ao aceitar!", "Não foi possível aceitar o orçamento");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ CORREÇÃO: Rejeitar orçamento com refresh
+  const handleRejectQuotation = async () => {
+    try {
+      setLoading(true);
+      await orderService.rejectQuotation(quotationData.orderId);
+
+      emitOrderStatusUpdated(currentOrder);
+
+      // ✅ IMPORTANTE: Atualizar dados imediatamente
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      showSuccess("Orçamento rejeitado!", "Proposta foi recusada");
+    } catch (error) {
+      showError("Erro ao rejeitar!", "Não foi possível rejeitar o orçamento");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ NOVA FUNÇÃO: Para cliente realizar pagamento
+  const handlePayment = () => {
+    console.log(currentOrder.quotations);
+    const latestQuotation = currentOrder?.quotations?.[0];
+
+    if (!latestQuotation) {
+      showError("Erro", "Nenhum orçamento disponível para pagamento.");
+      return;
+    }
+
+    navigation.navigate("ConfirmarPagamento", {
+      orderId: quotationData.orderId,
+      amount: latestQuotation.price,
+      serviceTitle: currentOrder.service.title,
+      providerId: currentOrder.providerId,
+    });
+  };
+
+  // ✅ RENOMEAR: Função existente só para prestador
+  const handleConfirmReceipt = async () => {
+    try {
+      setLoading(true);
+
+      const allPayments = await paymentService.getPaymentHistory();
+      const orderPayment = allPayments.find(
+        (payment) => payment.orderId === quotationData.orderId
+      );
+
+      if (!orderPayment) {
+        showError(
+          "Pagamento não encontrado! ❌",
+          "Nenhum pagamento localizado"
+        );
+        return;
+      }
+
+      await paymentService.confirmDirectPayment(orderPayment.id);
+      showSuccess("Pagamento confirmado! 💰", "Recebimento foi confirmado");
+
+      // ✅ IMPORTANTE: Emitir evento
+      emitOrderStatusUpdated(currentOrder);
+
+      if (onRefresh) {
+        await onRefresh();
       }
     } catch (error) {
-      console.error("Erro ao confirmar pagamento:", error);
-      Alert.alert(
-        "Erro",
-        error.message || "Não foi possível confirmar o pagamento"
+      showError(
+        "Erro no pagamento! ❌",
+        "Não foi possível confirmar o recebimento"
       );
     } finally {
       setLoading(false);
@@ -193,7 +238,7 @@ const QuotationMessage = ({
         status={
           quotationData.messageType === MESSAGE_TYPES.REQUEST
             ? ORDER_STATUS.WAITING_QUOTE
-            : activeOrder?.status
+            : currentOrder?.status
         }
         messageType={quotationData.messageType}
         isOwn={isOwn}
@@ -292,16 +337,16 @@ const QuotationMessage = ({
           <ButtonsContainer>
             <ActionButton
               variant="accept"
-              onPress={() => onAccept(message)}
-              testID="accept-button"
+              onPress={handleAcceptQuotation}
+              disabled={loading}
             >
               <ButtonIcon name="checkmark-outline" size={18} />
               <ButtonText>Aceitar</ButtonText>
             </ActionButton>
             <ActionButton
               variant="reject"
-              onPress={() => onReject(message)}
-              testID="reject-button"
+              onPress={handleRejectQuotation}
+              disabled={loading}
             >
               <ButtonIcon name="close-outline" size={18} />
               <ButtonText>Rejeitar</ButtonText>
@@ -309,27 +354,28 @@ const QuotationMessage = ({
           </ButtonsContainer>
         )}
 
-        {activeOrder?.status === ORDER_STATUS.QUOTE_ACCEPTED &&
+        {/* Botão para CLIENTE realizar pagamento */}
+        {currentOrder?.status === ORDER_STATUS.QUOTE_ACCEPTED &&
           quotationData.messageType === MESSAGE_TYPES.QUOTE &&
           !isProvider && (
             <ActionButton
               variant="accept"
-              onPress={handlePayment}
-              disabled={!activeOrder?.providerId}
+              onPress={handlePayment} // ✅ MUDANÇA: usar handlePayment
+              disabled={loading}
             >
               <ButtonIcon name="card-outline" size={18} />
               <ButtonText>Realizar Pagamento</ButtonText>
             </ActionButton>
           )}
 
-        {/* NOVO: Botão "Confirmar Recebimento" para prestador */}
-        {(activeOrder?.status === "PAYMENT_PENDING" ||
-          activeOrder?.status === "CLIENT_CONFIRMED") &&
+        {/* Botão para PRESTADOR confirmar recebimento */}
+        {(currentOrder?.status === "PAYMENT_PENDING" ||
+          currentOrder?.status === "CLIENT_CONFIRMED") &&
           quotationData.messageType === MESSAGE_TYPES.QUOTE &&
           isProvider && (
             <ActionButton
               variant="accept"
-              onPress={handleConfirmPayment}
+              onPress={handleConfirmReceipt} // ✅ MUDANÇA: usar handleConfirmReceipt
               disabled={loading}
             >
               <ButtonIcon name="checkmark-circle-outline" size={18} />

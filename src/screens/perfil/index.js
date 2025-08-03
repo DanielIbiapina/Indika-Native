@@ -25,6 +25,11 @@ import {
   Container,
   ProfileHeader,
   AvatarContainer,
+  AvatarImage,
+  DefaultAvatarContainer,
+  DefaultAvatarIcon,
+  AvatarEditOverlay,
+  EditIcon,
   UserInfo,
   UserName,
   UserEmail,
@@ -79,8 +84,9 @@ import { friendshipService } from "../../services/friendshipService";
 import { eventEmitter, EVENTS } from "../../utils/eventEmitter";
 import { useBadge } from "../../contexts/badgeContext";
 import { useFocusEffect } from "@react-navigation/native";
+import { useToast } from "../../hooks/useToast";
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 3;
 
 const TABS = {
   RECEIVED_ORDERS: "receivedOrders",
@@ -125,6 +131,7 @@ const Profile = () => {
   const [loadingFriendRequests, setLoadingFriendRequests] = useState(false);
 
   const { badges, refreshBadgesFromServer, clearBadge } = useBadge();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     loadProfileData();
@@ -253,11 +260,14 @@ const Profile = () => {
         orders: { ...prev.orders, loading: true },
       }));
 
-      const orders = await orderService.list({
+      const response = await orderService.list({
         role: "provider",
         page,
         limit: ITEMS_PER_PAGE,
       });
+
+      // ✅ CORREÇÃO: Usar response.orders em vez de response diretamente
+      const orders = response.orders || response;
 
       setReceivedOrders((prev) => (page === 1 ? orders : [...prev, ...orders]));
 
@@ -265,7 +275,10 @@ const Profile = () => {
         ...prev,
         orders: {
           page,
-          hasMore: orders.length === ITEMS_PER_PAGE,
+          // ✅ CORREÇÃO: Usar paginação da resposta
+          hasMore: response.pagination
+            ? page < response.pagination.pages
+            : orders.length === ITEMS_PER_PAGE,
           loading: false,
         },
       }));
@@ -391,10 +404,10 @@ const Profile = () => {
       await userService.updateProfile(updatedProfile);
       await loadProfileData();
       setIsEditing(false);
-      Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+      showSuccess("Perfil salvo!", "Suas informações foram atualizadas");
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
-      Alert.alert("Erro", "Não foi possível atualizar o perfil");
+      showError("Ops!", "Não foi possível atualizar o perfil");
     } finally {
       setLoading(false);
     }
@@ -683,16 +696,17 @@ const Profile = () => {
   };
 
   const renderAvatar = () => (
-    <AvatarContainer>
-      <Image
-        style={{
-          width: 100,
-          height: 100,
-          borderRadius: 50,
-        }}
-        source={profileData?.avatar ? { uri: profileData.avatar } : null}
-        resizeMode="cover"
-      />
+    <AvatarContainer onPress={() => setIsEditing(true)}>
+      {profileData?.avatar ? (
+        <AvatarImage source={{ uri: profileData.avatar }} resizeMode="cover" />
+      ) : (
+        <DefaultAvatarContainer>
+          <DefaultAvatarIcon name="person" size={40} color="#fff" />
+          <AvatarEditOverlay>
+            <EditIcon name="camera" size={16} color="#fff" />
+          </AvatarEditOverlay>
+        </DefaultAvatarContainer>
+      )}
     </AvatarContainer>
   );
 
@@ -887,13 +901,13 @@ const Profile = () => {
         <MenuItemText>Mensagens</MenuItemText>
       </MenuItem>
 
-      <MenuItem
+      {/*<MenuItem
         onPress={() => navigation.navigate("Favoritos")}
         testID="favorites-button"
       >
         <Ionicons name="star-outline" size={24} color="#666" />
         <MenuItemText>Favoritos</MenuItemText>
-      </MenuItem>
+      </MenuItem>*/}
 
       <MenuItem
         onPress={() => navigation.navigate("Pagamentos")}

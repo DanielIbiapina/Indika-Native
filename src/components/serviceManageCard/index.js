@@ -34,8 +34,8 @@ const ServiceManageCard = ({ service, onEdit, onDelete, testID }) => {
     images,
     title,
     category,
-    priceStartingAt,
-    priceUnit,
+    // priceStartingAt, // ❌ REMOVIDO
+    // priceUnit, // ❌ REMOVIDO
     rating = 0,
     totalRatings = 0,
     isActive = true,
@@ -70,7 +70,7 @@ const ServiceManageCard = ({ service, onEdit, onDelete, testID }) => {
           <CategoryText>{category}</CategoryText>
 
           <ServiceFooter>
-            <Price>R$ {priceStartingAt?.toFixed(2)?.replace(".", ",")}</Price>
+            {/* ❌ REMOVIDO: <Price>R$ {priceStartingAt?.toFixed(2)?.replace(".", ",")}</Price> */}
             <Rating>
               <Ionicons name="star" size={12} color="#FFC107" />
               <RatingText>{rating > 0 ? rating.toFixed(1) : "0.0"}</RatingText>

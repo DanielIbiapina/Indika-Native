@@ -44,13 +44,13 @@ const HistoricoPagamento = () => {
       const response = await paymentService.getPaymentHistory();
 
       // Filtrar transações baseado no tipo selecionado
-      let filteredTransactions = response.data;
+      let filteredTransactions = response;
       if (filter === "received") {
-        filteredTransactions = response.data.filter(
+        filteredTransactions = response.filter(
           (transaction) => transaction.receiverId === user.id
         );
       } else if (filter === "sent") {
-        filteredTransactions = response.data.filter(
+        filteredTransactions = response.filter(
           (transaction) => transaction.senderId === user.id
         );
       }

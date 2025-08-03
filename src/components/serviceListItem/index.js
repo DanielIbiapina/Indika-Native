@@ -27,7 +27,7 @@ const ServiceListItem = ({ service }) => {
             {service.rating?.toFixed(1) || "0.0"} ({service.totalRatings || 0})
           </Rating.Text>
         </Rating>
-        <Price>A partir de R$ {service.priceStartingAt}</Price>
+        {/* ❌ REMOVIDO: <Price>A partir de R$ {service.priceStartingAt}</Price> */}
         <Description numberOfLines={2}>{service.description}</Description>
       </ServiceInfo>
     </Container>

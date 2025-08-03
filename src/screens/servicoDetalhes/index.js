@@ -53,6 +53,8 @@ import {
   PeriodText,
   TimeOptionContainer,
   TimeOptionText,
+  LocationInfo,
+  LocationText,
 } from "./styles";
 import { communityService } from "../../services/communityService";
 import {
@@ -74,6 +76,7 @@ import generateWelcomeMessage from "../../utils/generateWelcomeMessage";
 import { MESSAGE_TYPES } from "../../constants/orderStatus";
 import { emitOrderCreated } from "../../utils/eventEmitter";
 import estreloamigos from "../../assets/estreloamigos.jpg";
+import { useToast } from "../../hooks/useToast";
 
 const PERIODS = {
   MORNING: "morning",
@@ -139,6 +142,7 @@ const ServiceHeader = ({
       />
       <ServiceDetails>
         <ServiceTitle>{service.title}</ServiceTitle>
+
         <TouchableOpacity
           onPress={() =>
             navigation.navigate("PerfilVisitante", {
@@ -154,9 +158,19 @@ const ServiceHeader = ({
             <Rating>{service.provider.rating?.toFixed(1)}⭐</Rating>
           </ProviderInfo>
         </TouchableOpacity>
-        <Price>
-          R$ {service.priceStartingAt} / {service.priceUnit}
-        </Price>
+
+        {/* ✅ NOVO: Mostrar localização do serviço */}
+        {(service.serviceCity || service.serviceState) && (
+          <LocationInfo>
+            <Ionicons name="location-outline" size={16} color="#666" />
+            <LocationText>
+              {service.serviceCity && service.serviceState
+                ? `${service.serviceCity}, ${service.serviceState}`
+                : service.serviceCity || service.serviceState}
+            </LocationText>
+          </LocationInfo>
+        )}
+
         <Description>{service.description}</Description>
 
         {!showBookingForm &&
@@ -203,6 +217,7 @@ const ServicoDetalhes = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
+  const { showSuccess, showError } = useToast();
 
   const scrollViewRef = useRef(null);
 
@@ -245,11 +260,16 @@ const ServicoDetalhes = () => {
 
   const loadUserSpecificData = async (serviceData) => {
     try {
-      const [orders, userCommunities, recommendations] = await Promise.all([
-        orderService.list({ role: "client", serviceId: id }),
-        communityService.getUserCommunities(),
-        recommendService.getRecommendationsByCommunity(serviceData.providerId),
-      ]);
+      const [ordersResponse, userCommunities, recommendations] =
+        await Promise.all([
+          orderService.list({ role: "client", serviceId: id }),
+          communityService.getUserCommunities(),
+          recommendService.getRecommendationsByCommunity(
+            serviceData.providerId
+          ),
+        ]);
+
+      const orders = ordersResponse.orders || ordersResponse;
 
       const completedOrder = orders.find((o) => o.status === "PAID");
       setOrder(completedOrder || null);
@@ -422,8 +442,7 @@ const ServicoDetalhes = () => {
       });
 
       navigation.getParent()?.setParams({ ordersUpdated: true });
-
-      Alert.alert("Sucesso", "Agendamento realizado com sucesso!");
+      showSuccess("Agendamento realizado com sucesso!");
     } catch (err) {
       handleError(err, "criação do agendamento");
     }

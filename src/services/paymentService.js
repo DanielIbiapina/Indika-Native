@@ -49,6 +49,7 @@ export const paymentService = {
   getPaymentHistory: async () => {
     try {
       const response = await api.get("/payments/history");
+      console.log(response.data);
       return response.data;
     } catch (error) {
       console.error("Erro ao buscar histórico:", error);
@@ -386,6 +387,17 @@ export const paymentService = {
     } catch (error) {
       console.error("Erro ao configurar método de pagamento:", error);
       throw error;
+    }
+  },
+
+  cancelSubscription: async (data) => {
+    try {
+      const response = await api.delete("/payments/subscription/cancel", {
+        data: data,
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error, "Erro ao cancelar assinatura");
     }
   },
 };

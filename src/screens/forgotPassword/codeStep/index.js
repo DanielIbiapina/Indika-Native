@@ -63,6 +63,9 @@ const ForgotPasswordCode = ({ route, navigation }) => {
         return;
       }
 
+      console.log(phoneNumber);
+      console.log(verificationResult.verifiedPhoneToken);
+      console.log(newPassword);
       // Reset da senha
       await userService.resetPassword({
         phoneNumber,
@@ -71,7 +74,7 @@ const ForgotPasswordCode = ({ route, navigation }) => {
       });
 
       Alert.alert("Sucesso!", "Sua senha foi alterada com sucesso.", [
-        { text: "OK", onPress: () => navigation.navigate("Login") },
+        { text: "OK", onPress: () => navigation.navigate("Entrar") },
       ]);
     } catch (err) {
       setError("Erro ao alterar senha. Tente novamente.");

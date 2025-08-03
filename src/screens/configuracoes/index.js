@@ -75,16 +75,18 @@ const Configuracoes = () => {
             <MenuItemText>Central de Ajuda</MenuItemText>
             <Ionicons name="chevron-forward" size={24} color="#666" />
           </MenuItem>
+          {/* ✅ CONSOLIDAR em uma única opção */}
           <MenuItem onPress={() => navigation.navigate("TermosUso")}>
             <Ionicons name="document-text-outline" size={24} color="#666" />
-            <MenuItemText>Termos de Uso</MenuItemText>
+            <MenuItemText>Termos de Uso e Política de Privacidade</MenuItemText>
             <Ionicons name="chevron-forward" size={24} color="#666" />
           </MenuItem>
+          {/* ❌ REMOVER: 
           <MenuItem onPress={() => navigation.navigate("PoliticaPrivacidade")}>
             <Ionicons name="lock-closed-outline" size={24} color="#666" />
             <MenuItemText>Política de Privacidade</MenuItemText>
             <Ionicons name="chevron-forward" size={24} color="#666" />
-          </MenuItem>
+          </MenuItem> */}
         </Section>
 
         {/* Resetar Tutoriais */}

@@ -265,7 +265,7 @@ const ConfirmarPagamento = () => {
               <Label
                 style={{ fontSize: 16, fontWeight: "bold", marginBottom: 16 }}
               >
-                💰 Informações para o PIX
+                Informações para o PIX
               </Label>
             </InfoRow>
 

@@ -190,7 +190,7 @@ const Pedidos = () => {
   return (
     <Container>
       <Title>Pedidos</Title>
-      <HeaderActions>
+      {/*<HeaderActions>
         <FilterButton>
           <Ionicons name="filter-outline" size={24} color="#422680" />
           <FilterButtonText>Filtrar</FilterButtonText>
@@ -200,7 +200,7 @@ const Pedidos = () => {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-      </HeaderActions>
+      </HeaderActions>*/}
 
       <TabsContainer>
         <Tab

@@ -8,10 +8,12 @@ export const serviceService = {
         page = 1,
         limit = 10,
         category,
-        minPrice,
-        maxPrice,
         orderBy = "createdAt",
         profileId,
+        // 🔥 NOVOS PARÂMETROS:
+        userLocation, // { latitude, longitude, city, state }
+        maxDistance = 50, // km
+        filterByLocation = true,
       } = params;
 
       const queryParams = {
@@ -24,9 +26,19 @@ export const serviceService = {
       }
 
       if (category) queryParams.category = category;
-      if (minPrice) queryParams.minPrice = String(minPrice);
-      if (maxPrice) queryParams.maxPrice = String(maxPrice);
       if (profileId) queryParams.profileId = profileId;
+
+      // 🔥 FILTROS DE LOCALIZAÇÃO:
+      if (filterByLocation && userLocation) {
+        if (userLocation.latitude && userLocation.longitude) {
+          queryParams.lat = userLocation.latitude;
+          queryParams.lng = userLocation.longitude;
+          queryParams.maxDistance = maxDistance;
+        } else if (userLocation.city) {
+          queryParams.city = userLocation.city;
+          queryParams.state = userLocation.state;
+        }
+      }
 
       const queryString = Object.keys(queryParams)
         .map(
@@ -35,6 +47,7 @@ export const serviceService = {
         )
         .join("&");
 
+      console.log("🔍 Query String:", queryString);
       const response = await api.get(`/services?${queryString}`);
 
       return response.data;
@@ -56,7 +69,23 @@ export const serviceService = {
     }
   },
 
-  // Criar/atualizar um serviço
+  // ✅ NOVA: Função separada para busca por proximidade (ADICIONAL)
+  searchNearby: async (location, radius = 25) => {
+    try {
+      const response = await api.get("/services/nearby", {
+        params: {
+          lat: location.latitude,
+          lng: location.longitude,
+          radius,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleError(error, "Erro ao buscar serviços próximos");
+    }
+  },
+
+  // ✅ MODIFICAR: create para incluir serviceArea
   create: async (formData, serviceId = null) => {
     try {
       // Se tem serviceId, adicionar ao FormData

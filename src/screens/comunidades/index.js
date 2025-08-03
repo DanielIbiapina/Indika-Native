@@ -37,7 +37,7 @@ const { width: viewportWidth } = Dimensions.get("window");
 
 const Comunidades = () => {
   const navigation = useNavigation();
-  const { signed: isLoggedIn } = useAuth();
+  const { signed: isLoggedIn, user } = useAuth(); // ✅ Obter dados do usuário
   const [communities, setCommunities] = useState({
     public: [],
     private: [],
@@ -52,34 +52,84 @@ const Comunidades = () => {
     isSearching: false,
   });
   const [refreshing, setRefreshing] = useState(false);
+  // ✅ NOVOS ESTADOS para controle de paginação e filtros
+  const [page, setPage] = useState(1);
+  const [hasMoreData, setHasMoreData] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     loadCommunities();
   }, [isLoggedIn]);
 
-  const loadCommunities = async () => {
+  // ✅ FUNÇÃO MELHORADA: Carregamento inteligente
+  const loadCommunities = async (reset = true) => {
     try {
-      setLoading(true);
+      if (reset) {
+        setLoading(true);
+        setPage(1);
+      } else {
+        setLoadingMore(true);
+      }
       setError(null);
 
+      const currentPage = reset ? 1 : page;
+
+      // ✅ USAR NOVO MÉTODO com contexto do usuário
       const [allCommunities, userComms] = await Promise.all([
-        communityService.list(),
+        isLoggedIn
+          ? communityService.listWithUserContext({
+              page: currentPage,
+              limit: 30,
+            })
+          : communityService.list({
+              page: currentPage,
+              limit: 30,
+              includeFriends: false,
+            }),
         isLoggedIn
           ? communityService.getUserCommunities()
           : { communities: [] },
       ]);
 
-      setCommunities({
-        public: allCommunities.filter((comm) => !comm.isPrivate),
-        private: allCommunities.filter((comm) => comm.isPrivate),
-        userCommunities: userComms.communities || [],
-      });
+      // ✅ VERIFICAR se há mais dados para carregar
+      const newHasMoreData = allCommunities.length === 30;
+      setHasMoreData(newHasMoreData);
+
+      if (reset) {
+        setCommunities({
+          public: allCommunities.filter((comm) => !comm.isPrivate),
+          private: allCommunities.filter((comm) => comm.isPrivate),
+          userCommunities: userComms.communities || [],
+        });
+      } else {
+        // ✅ ADICIONAR às comunidades existentes (paginação)
+        setCommunities((prev) => ({
+          public: [
+            ...prev.public,
+            ...allCommunities.filter((comm) => !comm.isPrivate),
+          ],
+          private: [
+            ...prev.private,
+            ...allCommunities.filter((comm) => comm.isPrivate),
+          ],
+          userCommunities: userComms.communities || prev.userCommunities,
+        }));
+        setPage(currentPage + 1);
+      }
     } catch (err) {
       setError("Erro ao carregar comunidades");
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // ✅ NOVA FUNÇÃO: Carregar mais comunidades (infinite scroll)
+  const loadMoreCommunities = () => {
+    if (!loadingMore && hasMoreData) {
+      loadCommunities(false);
     }
   };
 
@@ -103,7 +153,7 @@ const Comunidades = () => {
     );
   };
 
-  // Função de busca híbrida
+  // ✅ FUNÇÃO MELHORADA: Busca com filtros
   const performSearch = async (query) => {
     if (!query.trim()) {
       setSearchResults({
@@ -117,31 +167,42 @@ const Comunidades = () => {
     try {
       setSearchResults((prev) => ({ ...prev, isSearching: true }));
 
-      // Sempre buscar comunidades
-      const filteredCommunities = {
-        public: filterCommunities(communities.public, query),
-        private: filterCommunities(communities.private, query),
-        userCommunities: filterCommunities(communities.userCommunities, query),
-      };
+      // Buscar comunidades com contexto do usuário
+      const communitiesPromise = isLoggedIn
+        ? communityService.listWithUserContext({
+            page: 1,
+            limit: 50, // Mais resultados na busca
+          })
+        : communityService.list({
+            page: 1,
+            limit: 50,
+            includeFriends: false,
+          });
 
-      let foundUser = null;
+      // Buscar usuários se parece com telefone
+      const userPromise = isPhoneNumber(query)
+        ? userService.searchByPhone(query).catch(() => null)
+        : Promise.resolve(null);
 
-      // Se parecer um telefone, buscar usuário
-      if (isPhoneNumber(query)) {
-        try {
-          foundUser = await userService.searchByPhone(query);
-        } catch (error) {
-          console.log("Usuário não encontrado por telefone:", error.message);
-        }
-      }
+      const [allCommunities, foundUser] = await Promise.all([
+        communitiesPromise,
+        userPromise,
+      ]);
+
+      // Filtrar comunidades localmente por nome/descrição
+      const filteredCommunities = filterCommunities(allCommunities, query);
 
       setSearchResults({
-        communities: filteredCommunities,
+        communities: {
+          public: filteredCommunities.filter((comm) => !comm.isPrivate),
+          private: filteredCommunities.filter((comm) => comm.isPrivate),
+          userCommunities: [], // Não mostrar na busca
+        },
         user: foundUser,
         isSearching: false,
       });
-    } catch (error) {
-      console.error("Erro na busca:", error);
+    } catch (err) {
+      console.error("Erro na busca:", err);
       setSearchResults((prev) => ({ ...prev, isSearching: false }));
     }
   };
@@ -219,10 +280,10 @@ const Comunidades = () => {
       searchResults.communities.userCommunities.length > 0 ||
       searchResults.user !== null);
 
-  // ✨ NOVO: Pull to refresh handler
-  const handleRefresh = async () => {
+  // ✅ FUNÇÃO MELHORADA: Refresh com reset
+  const onRefresh = () => {
     setRefreshing(true);
-    await loadCommunities();
+    loadCommunities(true);
   };
 
   // ✨ NOVO: Event listeners
@@ -282,15 +343,22 @@ const Comunidades = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#422680"]}
-            tintColor="#422680"
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        // ✅ ADICIONAR: Infinite scroll
+        onMomentumScrollEnd={(event) => {
+          const { layoutMeasurement, contentOffset, contentSize } =
+            event.nativeEvent;
+          const isCloseToBottom =
+            layoutMeasurement.height + contentOffset.y >=
+            contentSize.height - 200;
+
+          if (isCloseToBottom && !searchQuery.trim()) {
+            loadMoreCommunities();
+          }
+        }}
+        scrollEventThrottle={400}
       >
         {isLoggedIn && !searchQuery.trim() && (
           <AddButtonContainer>
@@ -451,6 +519,13 @@ const Comunidades = () => {
               </LoginPrompt>
             )}
           </>
+        )}
+
+        {/* ✅ ADICIONAR: Indicador de loading para mais dados */}
+        {loadingMore && (
+          <LoaderContainer style={{ marginVertical: 20 }}>
+            <ActivityIndicator size="small" color="#422680" />
+          </LoaderContainer>
         )}
       </ScrollView>
     </Container>

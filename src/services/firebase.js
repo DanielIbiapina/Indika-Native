@@ -23,13 +23,17 @@ if (__DEV__) {
     console.log("🧪 DEV: Firebase web inicializado");
   } catch (error) {
     console.log("⚠️ DEV: Erro ao inicializar Firebase web:", error.message);
-    // Fallback para simulação total
     auth = null;
   }
 } else {
-  // 🚀 PRODUÇÃO: Firebase nativo (APK) - MANTÉM IGUAL!
-  auth = require("@react-native-firebase/auth").default;
-  console.log("🚀 PROD: Firebase nativo inicializado");
+  // ✅ CORREÇÃO: iOS E ANDROID usam a mesma sintaxe
+  try {
+    auth = require("@react-native-firebase/auth").default;
+    console.log("🚀 PROD: Firebase nativo inicializado");
+  } catch (error) {
+    console.error("❌ ERRO Firebase nativo:", error);
+    auth = null;
+  }
 }
 
 export { auth };

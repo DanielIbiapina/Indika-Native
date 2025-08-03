@@ -14,40 +14,48 @@ import {
   CountryCode,
 } from "../styles";
 
-// Formatação de telefone consistente
-const formatPhoneNumber = (phone) => {
-  let formattedPhone = phone.replace(/\D/g, "");
+// ✅ CORREÇÃO: Formatação que permite apagar normalmente
+const formatPhoneNumber = (phone, previousPhone = "") => {
+  // Remove todos os caracteres não numéricos
+  let cleanPhone = phone.replace(/\D/g, "");
 
-  if (formattedPhone.length > 11) {
-    formattedPhone = formattedPhone.slice(0, 11);
+  // Limita a 11 dígitos
+  if (cleanPhone.length > 11) {
+    cleanPhone = cleanPhone.slice(0, 11);
   }
 
-  if (formattedPhone.length >= 2) {
-    formattedPhone = `(${formattedPhone.substring(
-      0,
-      2
-    )}) ${formattedPhone.substring(2)}`;
+  // Se está apagando (telefone ficou menor), retorna apenas os números
+  if (cleanPhone.length < previousPhone.replace(/\D/g, "").length) {
+    return cleanPhone;
   }
 
-  if (formattedPhone.length >= 10) {
-    formattedPhone = `${formattedPhone.substring(
-      0,
-      10
-    )}-${formattedPhone.substring(10)}`;
+  // Aplica formatação apenas se está digitando
+  if (cleanPhone.length >= 2) {
+    cleanPhone = `(${cleanPhone.substring(0, 2)}) ${cleanPhone.substring(2)}`;
   }
 
-  return formattedPhone;
+  if (cleanPhone.length >= 10) {
+    cleanPhone = `${cleanPhone.substring(0, 10)}-${cleanPhone.substring(10)}`;
+  }
+
+  return cleanPhone;
 };
 
 const PhoneStep = ({ onNext, onBack, title }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [previousPhone, setPreviousPhone] = useState(""); // ✅ NOVO: Para comparar
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handlePhoneChange = (e) => {
     const text = e.nativeEvent ? e.nativeEvent.text : e;
+
+    // ✅ CORREÇÃO: Salva o telefone anterior para comparação
+    setPreviousPhone(phoneNumber);
+
     if (text.length <= 15) {
-      setPhoneNumber(formatPhoneNumber(text));
+      const formatted = formatPhoneNumber(text, phoneNumber);
+      setPhoneNumber(formatted);
     }
   };
 

@@ -26,6 +26,7 @@ import {
   PixTypeLabel,
 } from "./styles";
 import { paymentService } from "../../../services/paymentService";
+import { useToast } from "../../../hooks/useToast";
 
 const MP_URL = "https://www.mercadopago.com.br/home";
 
@@ -38,6 +39,7 @@ const PIX_KEY_TYPES = [
 ];
 
 const SetupMetodoPagamento = () => {
+  const { showSuccess, showError, showWarning } = useToast();
   const [methods, setMethods] = useState({
     pix: false,
     cash: true,
@@ -90,7 +92,10 @@ const SetupMetodoPagamento = () => {
     try {
       if (methods.pix) {
         if (!pixConfig.key || !pixConfig.keyType || !pixConfig.holderName) {
-          Alert.alert("Erro", "Por favor, preencha todos os dados do PIX");
+          showWarning(
+            "PIX incompleto!",
+            "Por favor, preencha todos os dados do PIX"
+          );
           return;
         }
       }
@@ -117,9 +122,15 @@ const SetupMetodoPagamento = () => {
       }
 
       await paymentService.setupPaymentMethod(paymentMethods);
-      Alert.alert("Sucesso", "Configurações de pagamento atualizadas!");
+      showSuccess(
+        "Pagamentos configurados!",
+        "Métodos de pagamento atualizados"
+      );
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível salvar as configurações");
+      showError(
+        "Erro de configuração!",
+        "Não foi possível salvar as configurações"
+      );
     }
   };
 
@@ -197,7 +208,7 @@ const SetupMetodoPagamento = () => {
               </MethodHeader>
             </MethodSection>
 
-            <MethodSection>
+            {/*<MethodSection>
               <MethodHeader>
                 <MethodTitle>Mercado Pago (Parcelado)</MethodTitle>
                 <Switch
@@ -213,7 +224,7 @@ const SetupMetodoPagamento = () => {
                   <MPButtonText>Configurar no Mercado Pago</MPButtonText>
                 </MPButton>
               )}
-            </MethodSection>
+            </MethodSection>*/}
 
             <SaveButton onPress={handleSaveSettings}>
               <SaveButtonText>Salvar Configurações</SaveButtonText>

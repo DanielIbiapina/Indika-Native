@@ -4,42 +4,47 @@ export const SearchContainer = styled.View`
   flex-direction: row;
   align-items: center;
   background-color: #fff;
-  border-radius: 12px;
-  padding: 12px 16px;
-  margin: 16px auto;
-  width: 100%;
-  max-width: 768px;
-  box-sizing: border-box;
-  shadow-color: #000;
-  shadow-opacity: 0.05;
-  shadow-radius: 4px;
-  elevation: 2;
-
-  &:focus {
-    background-color: #eef0f2;
-    shadow-opacity: 0.1;
-  }
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-width: 1px;
+  border-color: #e0e0e0;
+  margin-vertical: 8px;
 `;
 
 export const SearchIcon = styled.View`
-  justify-content: center;
-  align-items: center;
-  margin-right: 12px;
-  color: #666;
+  margin-right: 8px;
 `;
 
 export const SearchInput = styled.TextInput`
   flex: 1;
-  font-size: 15px;
-  color: ${({ theme }) => {
-    return theme?.colors?.text?.primary || "#000";
-  }};
+  font-size: 16px;
+  color: #333;
   padding: 0;
-  width: 100%;
-  height: 24px;
+`;
 
-  &::placeholder {
-    color: #666;
-    font-size: 15px;
-  }
+// ✅ NOVO: Estilos para sugestões
+export const SuggestionsList = styled.View`
+  background-color: #fff;
+  border-radius: 8px;
+  margin-top: 4px;
+  border-width: 1px;
+  border-color: #e0e0e0;
+  shadow-color: #000;
+  shadow-offset: 0px 2px;
+  shadow-opacity: 0.1;
+  shadow-radius: 4px;
+  elevation: 3;
+`;
+
+export const SuggestionItem = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  padding: 12px;
+  border-bottom-width: 1px;
+  border-bottom-color: #f0f0f0;
+`;
+
+export const SuggestionText = styled.View`
+  flex: 1;
+  flex-direction: row;
 `;

@@ -47,6 +47,7 @@ const OrderCard = ({
   const navigation = useNavigation();
   const isProvider = user?.id === order.providerId;
   const [showQuotationModal, setShowQuotationModal] = React.useState(false);
+  console.log("order.price", order.price);
 
   const formatDate = (date) => {
     try {
@@ -189,7 +190,9 @@ const OrderCard = ({
 
       <DateText>{formatDate(order.scheduledDate)}</DateText>
 
-      {order.price && <Price>R$ {Number(order.price).toFixed(2)}</Price>}
+      {order.price != null && !isNaN(Number(order.price)) && (
+        <Price>R$ {Number(order.price).toFixed(2)}</Price>
+      )}
 
       <ButtonsContainer>
         <ActionButton

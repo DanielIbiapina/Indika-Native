@@ -18,6 +18,7 @@ import { Animated, Alert } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { orderService } from "../../services/orderService";
 import { emitOrderStatusUpdated } from "../../utils/eventEmitter";
+import { useToast } from "../../hooks/useToast";
 
 const RECOMMENDATION_TYPES = {
   INDICA: "indica",
@@ -26,6 +27,7 @@ const RECOMMENDATION_TYPES = {
 
 const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus, testID }) => {
   const { signed: isLoggedIn } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
     rating: 0,
     comment: "",
@@ -78,7 +80,7 @@ const ReviewForm = ({ orderId, onSubmit, setRecommendationStatus, testID }) => {
       });
 
       setRecommendationStatus(formData.recommendation);
-      Alert.alert("Sucesso", "Avaliação enviada com sucesso!");
+      showSuccess("Obrigado!", "Avaliação enviada com sucesso");
     } catch (err) {
       setError(err.message || "Erro ao enviar avaliação");
     } finally {

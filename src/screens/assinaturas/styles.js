@@ -1,4 +1,5 @@
 import styled from "styled-components/native";
+import { Ionicons } from "@expo/vector-icons";
 
 export const Container = styled.View`
   flex: 1;
@@ -177,4 +178,81 @@ export const ExpirationText = styled.Text`
   font-size: 14px;
   margin-left: 8px;
   flex: 1;
+`;
+
+export const AlertCard = styled.View`
+  background-color: ${({ type }) =>
+    type === "warning"
+      ? "#FFF3CD"
+      : type === "error"
+      ? "#F8D7DA"
+      : type === "info"
+      ? "#D1ECF1"
+      : "#fff"};
+  border: 1px solid
+    ${({ type }) =>
+      type === "warning"
+        ? "#FFEAA7"
+        : type === "error"
+        ? "#F5C6CB"
+        : type === "info"
+        ? "#BEE5EB"
+        : "#ddd"};
+  border-radius: 8px;
+  margin: 16px;
+  padding: 16px;
+  flex-direction: row;
+  align-items: center;
+`;
+
+export const AlertIcon = styled(Ionicons)`
+  margin-right: 12px;
+`;
+
+export const AlertText = styled.Text`
+  flex: 1;
+  color: ${({ type }) =>
+    type === "warning"
+      ? "#856404"
+      : type === "error"
+      ? "#721C24"
+      : type === "info"
+      ? "#0C5460"
+      : "#333"};
+  font-size: 14px;
+  line-height: 20px;
+`;
+
+export const CancelButton = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  margin-top: 16px;
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  background-color: transparent;
+`;
+
+export const CancelButtonText = styled.Text`
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 8px;
+`;
+
+// ✅ APENAS OS ESTILOS QUE ESTÃO SENDO USADOS
+export const TrialSection = styled.View`
+  background-color: #f0f8ff;
+  border: 1px solid #2196f3;
+  border-radius: 8px;
+  margin: 8px 0;
+  padding: 12px;
+`;
+
+export const TrialSectionTitle = styled.Text`
+  font-size: 14px;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 8px;
 `;

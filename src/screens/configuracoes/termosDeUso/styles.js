@@ -78,3 +78,18 @@ export const DownloadButtonText = styled.Text`
   font-size: 16px;
   font-weight: 500;
 `;
+
+export const CompanyInfo = styled.View`
+  background-color: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  border-left: 4px solid ${(props) => props.theme.colors.primary};
+`;
+
+export const CompanyText = styled.Text`
+  font-size: 14px;
+  color: ${(props) => props.theme.colors.text.primary};
+  margin-bottom: 4px;
+  line-height: 18px;
+`;
