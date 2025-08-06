@@ -12,7 +12,17 @@ import { TutorialProvider } from "./contexts/tutorialContext";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "./config/toastConfig";
 
-import appCheck from "@react-native-firebase/app-check";
+// ✅ CORREÇÃO: Importação condicional do App Check
+let appCheck;
+if (!__DEV__) {
+  try {
+    appCheck = require("@react-native-firebase/app-check").default;
+  } catch (error) {
+    console.log("⚠️ App Check não disponível:", error.message);
+    appCheck = null;
+  }
+}
+
 import * as Sentry from "@sentry/react-native";
 
 if (!__DEV__) {
@@ -42,8 +52,8 @@ function App() {
   // ✅ FUNÇÃO SIMPLES PARA INICIALIZAR APP CHECK
   const initializeAppCheck = async () => {
     try {
-      if (!__DEV__) {
-        // ✅ SÓ EM PRODUÇÃO
+      if (!__DEV__ && appCheck) {
+        // ✅ SÓ EM PRODUÇÃO E SE APP CHECK ESTIVER DISPONÍVEL
         console.log("🔒 Inicializando App Check...");
 
         // ✅ USAR O MÉTODO DEPRECADO MAS FUNCIONAL (por enquanto)

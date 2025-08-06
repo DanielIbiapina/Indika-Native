@@ -36,6 +36,7 @@
     "expo-notifications": "~0.31.4",
     "expo-status-bar": "~2.2.3",
     "expo-updates": "~0.28.17",
+    "firebase": "^9.23.0",
     "promise": "^8.3.0",
     "react": "19.0.0",
     "react-native": "0.79.5",
