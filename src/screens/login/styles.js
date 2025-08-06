@@ -63,7 +63,7 @@ export const Input = styled.TextInput`
   color: #333;
 
   &::placeholder {
-    color: #666;
+    color: #333;
   }
 `;
 

@@ -2,7 +2,7 @@
   "expo": {
     "name": "indika-native",
     "slug": "indika-native",
-    "version": "1.0.6",
+    "version": "1.0.12",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,10 +15,22 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.indika.app",
-      "buildNumber": "2",
+      "buildNumber": "8",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "O Indika precisa da sua localização para mostrar serviços próximos e melhorar sua experiência.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "O Indika usa sua localização para mostrar serviços próximos e melhorar sua experiência.",
+        "NSLocationAlwaysUsageDescription": "O Indika usa sua localização para mostrar serviços próximos e melhorar sua experiência.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "Firebase Auth",
+            "CFBundleURLSchemes": [
+              "app-1-86807468256-ios-6386384a5f03c584145885"
+            ]
+          }
+        ],
+        "UIUserInterfaceStyle": "Light"
       }
     },
     "android": {
@@ -43,9 +55,10 @@
         }
       ],
       "package": "com.indika.app",
-      "versionCode": 2,
+      "versionCode": 8,
       "googleServicesFile": "./google-services.json",
-      "useNextNotificationsApi": true
+      "useNextNotificationsApi": true,
+      "userInterfaceStyle": "light"
     },
     "web": {
       "favicon": "./assets/icon.png"
@@ -65,6 +78,7 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
+      "@react-native-firebase/app-check",
       [
         "expo-notifications",
         {
@@ -82,9 +96,7 @@
         }
       ]
     ],
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.12",
     "updates": {
       "enabled": false
     }

@@ -52,22 +52,10 @@ export const BadgeProvider = ({ children }) => {
 
   useEffect(() => {
     if (user?.id) {
-      console.log("👤 User mudou:", user.id);
+      // console.log("👤 User mudou:", user.id);
       checkIfUserIsProvider();
     }
   }, [user?.id]);
-
-  useEffect(() => {
-    console.log("📊 Badges atualizados:", badges);
-  }, [badges]);
-
-  useEffect(() => {
-    console.log(
-      "👤 User no BadgeContext:",
-      user?.id,
-      user?.isProvider ? "Provider" : "Client"
-    );
-  }, [user]);
 
   const loadBadges = async () => {
     console.log("📥 Carregando badges do AsyncStorage...");

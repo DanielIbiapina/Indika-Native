@@ -204,10 +204,10 @@ export const ContentSection = styled.View`
   margin-bottom: 16px;
 `;
 
-export const LoadingSpinner = styled(ActivityIndicator).attrs({
+export const LoadingSpinner = styled(ActivityIndicator).attrs(({ theme }) => ({
   size: "small",
-  color: ({ theme }) => theme.colors.primary,
-})`
+  color: theme.colors.primary,
+}))`
   margin: 16px 0;
 `;
 

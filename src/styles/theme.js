@@ -9,6 +9,8 @@ export const theme = {
     },
     accent: "#AE2D68",
     border: "#660F56",
+    error: "#FF4444",
+    textSecondary: "#666666",
   },
   spacing: {
     xs: 4, // Removido "px", React Native entende diretamente números
