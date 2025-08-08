@@ -98,7 +98,9 @@
     ],
     "runtimeVersion": "1.0.12",
     "updates": {
-      "enabled": false
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/0cebe227-ea81-4706-9cb8-7884a86a3077"
     }
   }
 }

@@ -107,7 +107,8 @@ function App() {
           <OrderProvider>
             <TutorialProvider>
               <AppNavigator />
-              <StatusBar style="auto" />
+              {/* ✅ CORREÇÃO: Forçar StatusBar sempre light */}
+              <StatusBar style="light" />
               <Toast config={toastConfig} />
             </TutorialProvider>
           </OrderProvider>

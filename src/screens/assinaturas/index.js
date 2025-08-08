@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../../contexts/authContext";
 import { paymentService } from "../../services/paymentService";
 import {
   Container,
@@ -70,6 +71,7 @@ const Assinaturas = () => {
   const [subscribing, setSubscribing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const navigation = useNavigation();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadSubscription();
@@ -128,9 +130,36 @@ const Assinaturas = () => {
     }
   };
 
+  // ✅ NOVA FUNÇÃO: Validar se usuário tem email
+  const validateUserEmail = () => {
+    if (!user?.email) {
+      Alert.alert(
+        "Email Obrigatório",
+        "Para fazer uma assinatura, você precisa ter um email cadastrado. Deseja adicionar um email ao seu perfil?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Adicionar Email",
+            onPress: () => {
+              navigation.navigate("DadosPessoais");
+            },
+          },
+        ]
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleSubscribe = async (plan) => {
     try {
       setSubscribing(true);
+
+      // ✅ VALIDAÇÃO: Verificar se usuário tem email
+      if (!validateUserEmail()) {
+        setSubscribing(false);
+        return;
+      }
 
       Alert.alert(
         "Confirmar Assinatura",

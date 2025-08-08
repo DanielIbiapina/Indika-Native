@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, Alert } from "react-native";
+import { ActivityIndicator, Alert, View } from "react-native";
 import { WebView } from "react-native-webview";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -119,16 +119,12 @@ const ProcessarPagamentoAssinatura = () => {
 
       if (status.success === true) {
         Alert.alert(
-          "Assinatura Ativada! 🎉",
+          "Assinatura Ativada!",
           "Sua assinatura foi ativada com sucesso!",
           [
             {
               text: "Continuar",
               onPress: () => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: "TabNavigator" }],
-                });
                 navigation.navigate("Assinaturas");
               },
             },
